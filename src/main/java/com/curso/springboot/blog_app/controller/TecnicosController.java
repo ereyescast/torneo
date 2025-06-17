@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("api/torneo")
 public class TecnicosController {
 
-    @GetMapping
-    public ResponseEntity<Tecnicos> getTecnicos(){
-        return ResponseEntity.status(HttpStatus.CREATED).body(new Tecnicos(1,"Anthony","Venezolano",""));
-    }
+//    @GetMapping
+//    public ResponseEntity<Tecnicos> getTecnicos(){
+//        return ResponseEntity.status(HttpStatus.CREATED).body(new Tecnicos(1,"Anthony","Sarmiento","Sarmiento",43369874,"Venezolano","ubicación"));
+//    }
 }

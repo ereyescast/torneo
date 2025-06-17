@@ -1,25 +1,81 @@
 package com.curso.springboot.blog_app.model;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter
+@Getter
 public class EstadisticaJugador {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 50)
     private String estado;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 3)
     private int goles;
+
+    @Column(nullable = false)
+    @NotBlank
     private LocalDateTime horaInicio;
+
+    @Column(nullable = false)
+    @NotBlank
     private LocalDateTime horaFin;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 3)
     private int penales;
-    private int auotogoles;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 3)
+    private int autogoles;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 5)
     private int asistencias;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 3)
     private int tarjetasAmarillas;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 3)
     private int tarjetasRojas;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 5)
     private int tirosLibres;
+
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 5)
     private int tirosDeEsquina;
+
+    @OneToOne(targetEntity = Jugadores.class, cascade = CascadeType.PERSIST)
+    private Equipos jugador;
+
+    @OneToOne(targetEntity = Partidos.class, cascade = CascadeType.PERSIST)
+    private Equipos partido;
 }
