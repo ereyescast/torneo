@@ -10,8 +10,8 @@ import java.sql.Date;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Setter
-@Getter
+@Data
+
 public class Tecnicos {
 
     @Id
