@@ -8,7 +8,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class EstadisticaArbitro {
+public class AsignacionArbitro {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
 
     @OneToOne(targetEntity = Arbitros.class, cascade = CascadeType.PERSIST)
     private Arbitros arbitro;

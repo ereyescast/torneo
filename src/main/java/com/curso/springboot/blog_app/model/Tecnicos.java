@@ -55,7 +55,7 @@ public class Tecnicos {
     @Size(max = 300)
     private String profile_image;
 
-    @OneToOne(mappedBy="tecnico")
+    @OneToOne(targetEntity = Equipos.class, cascade = CascadeType.PERSIST)
     private Equipos equipo;
 
 }

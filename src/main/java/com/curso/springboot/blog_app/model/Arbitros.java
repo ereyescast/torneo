@@ -19,17 +19,17 @@ public class Arbitros {
 
     @Column(nullable = false)
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 100)
     private String nombres;
 
     @Column(nullable = false)
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 100)
     private String apellidosPaterno;
 
     @Column(nullable = false)
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 100)
     private String apellidosMaterno;
 
     @Column(nullable = false)
@@ -38,7 +38,7 @@ public class Arbitros {
     private String tipoDocumento;
 
     @Column(nullable = false, unique = true)
-    @Size(max = 30)
+    @Size(max = 50)
     private String numeroDocumento;
 
     @Column(nullable = false)
@@ -50,6 +50,6 @@ public class Arbitros {
     @NotBlank
     private Date fechaNac;
 
-    @Size(max = 300)
+    @Size(max = 500)
     private String profile_image;
 }
