@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -47,15 +49,16 @@ public class Equipos {
     @Size(max = 100)
     private String pais;
 
-    @Size(max = 300)
+    @Size(max = 500)
     private String profile_image;
 
-
-    @OneToOne
-    @JoinColumn(name = "tecnico_id" , nullable = false, unique = true)
+    @OneToOne(targetEntity = Tecnicos.class, cascade = CascadeType.PERSIST)
     private Tecnicos tecnico;
 
     @OneToOne(targetEntity = Torneos.class, cascade = CascadeType.PERSIST)
     private Torneos torneo;
+
+    @OneToMany(targetEntity = Jugadores.class, fetch = FetchType.LAZY)
+    private List<Jugadores> jugadores;
 
 }
