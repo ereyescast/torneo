@@ -59,6 +59,6 @@ public class Equipos {
     private Torneos torneo;
 
     @OneToMany(targetEntity = Jugadores.class, fetch = FetchType.LAZY)
-    private List<Jugadores> jugadores;
+    private List<Jugadores> jugadoresList;
 
 }
