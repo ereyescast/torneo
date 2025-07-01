@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.sql.Date;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -39,4 +40,10 @@ public class Torneos {
     @NotBlank
     @Size(max = 100)
     private String sede;
+
+    @OneToMany(targetEntity = Partidos.class, fetch = FetchType.LAZY, mappedBy = "torneo")
+    private List<Partidos> partidosList;
+
+    @OneToMany(targetEntity = Equipos.class, fetch = FetchType.LAZY, mappedBy = "torneo")
+    private List<Equipos> equiposList;
 }

@@ -11,7 +11,6 @@ import java.sql.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-
 public class Tecnicos {
 
     @Id
@@ -54,8 +53,4 @@ public class Tecnicos {
 
     @Size(max = 300)
     private String profile_image;
-
-    @OneToOne(targetEntity = Equipos.class, cascade = CascadeType.PERSIST)
-    private Equipos equipo;
-
 }

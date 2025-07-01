@@ -60,6 +60,6 @@ public class Jugadores {
     @Size(max = 300)
     private String profile_image;
 
-    @OneToOne(targetEntity = Equipos.class, cascade = CascadeType.PERSIST)
+    @ManyToOne(targetEntity = Equipos.class, cascade = CascadeType.PERSIST)
     private Equipos equipo;
 }
