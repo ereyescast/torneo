@@ -55,10 +55,10 @@ public class Equipos {
     @OneToOne(targetEntity = Tecnicos.class, cascade = CascadeType.PERSIST)
     private Tecnicos tecnico;
 
-    @OneToOne(targetEntity = Torneos.class, cascade = CascadeType.PERSIST)
+    @ManyToOne(targetEntity = Torneos.class, cascade = CascadeType.PERSIST)
     private Torneos torneo;
 
-    @OneToMany(targetEntity = Jugadores.class, fetch = FetchType.LAZY)
+    @OneToMany(targetEntity = Jugadores.class, fetch = FetchType.LAZY, mappedBy = "equipo" )
     private List<Jugadores> jugadoresList;
 
 }

@@ -40,6 +40,6 @@ public class Partidos {
     @OneToOne(targetEntity = Equipos.class, cascade = CascadeType.PERSIST)
     private Equipos equipo_visitante;
 
-    @OneToOne(targetEntity = Torneos.class, cascade = CascadeType.PERSIST)
+    @ManyToOne(targetEntity = Torneos.class, cascade = CascadeType.PERSIST)
     private Torneos torneo;
 }

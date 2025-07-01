@@ -41,9 +41,9 @@ public class Torneos {
     @Size(max = 100)
     private String sede;
 
-    @OneToMany(targetEntity = Partidos.class, fetch = FetchType.LAZY)
+    @OneToMany(targetEntity = Partidos.class, fetch = FetchType.LAZY, mappedBy = "torneo")
     private List<Partidos> partidosList;
 
-    @OneToMany(targetEntity = Equipos.class, fetch = FetchType.LAZY)
+    @OneToMany(targetEntity = Equipos.class, fetch = FetchType.LAZY, mappedBy = "torneo")
     private List<Equipos> equiposList;
 }
