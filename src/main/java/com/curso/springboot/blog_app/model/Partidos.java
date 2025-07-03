@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.sql.Date;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -42,4 +43,7 @@ public class Partidos {
 
     @ManyToOne(targetEntity = Torneos.class, cascade = CascadeType.PERSIST)
     private Torneos torneo;
+
+    @OneToMany(targetEntity = Arbitros.class, fetch = FetchType.LAZY, mappedBy = "partidos")
+    private List<Arbitros> arbitros;
 }

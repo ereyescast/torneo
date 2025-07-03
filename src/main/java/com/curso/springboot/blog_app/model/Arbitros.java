@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.sql.Date;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -50,6 +51,14 @@ public class Arbitros {
     @NotBlank
     private Date fechaNac;
 
+    @Column(nullable = false)
+    @NotBlank
+    @Size(max = 50)
+    private String tipo;
+
     @Size(max = 500)
     private String profile_image;
+
+    @ManyToOne(targetEntity = Partidos.class, cascade = CascadeType.PERSIST)
+    private Partidos partidos;
 }
