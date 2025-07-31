@@ -1,10 +1,10 @@
-package com.curso.springboot.blog_app;
+package com.torneo.copaestudiantil;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BlogAppApplicationTests {
+class TorneoAppApplicationTests {
 
 	@Test
 	void contextLoads() {

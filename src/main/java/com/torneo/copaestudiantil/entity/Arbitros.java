@@ -1,4 +1,4 @@
-package com.curso.springboot.blog_app.model;
+package com.torneo.copaestudiantil.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -6,9 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.sql.Date;
-import java.util.List;
 
-@Entity
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
