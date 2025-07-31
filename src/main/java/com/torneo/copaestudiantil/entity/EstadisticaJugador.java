@@ -1,4 +1,4 @@
-package com.curso.springboot.blog_app.model;
+package com.torneo.copaestudiantil.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -7,7 +7,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Entity
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Data

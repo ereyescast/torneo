@@ -1,4 +1,4 @@
-package com.curso.springboot.blog_app.model;
+package com.torneo.copaestudiantil.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -7,7 +7,7 @@ import lombok.*;
 
 import java.util.List;
 
-@Entity
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -52,8 +52,8 @@ public class Equipos {
     @Size(max = 500)
     private String profile_image;
 
-    @OneToOne(targetEntity = Tecnicos.class, cascade = CascadeType.PERSIST)
-    private Tecnicos tecnico;
+    @OneToOne(targetEntity = Tecnico.class, cascade = CascadeType.PERSIST)
+    private Tecnico tecnico;
 
     @ManyToOne(targetEntity = Torneos.class, cascade = CascadeType.PERSIST)
     private Torneos torneo;
