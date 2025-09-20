@@ -1,6 +1,7 @@
 package com.torneo.copaestudiantil.service.impl;
 
 import com.torneo.copaestudiantil.entity.Tecnico;
+import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.TecnicoRepository;
 import com.torneo.copaestudiantil.service.TecnicoService;
 import lombok.SneakyThrows;
@@ -39,10 +40,9 @@ public class TecnicoServiceImpl implements TecnicoService {
     }
 
     @Override
-    @SneakyThrows
-    public Tecnico actualizarTecnico(Long idTecnico, Tecnico tecnico) {
+        public Tecnico actualizarTecnico(Long idTecnico, Tecnico tecnico) {
         Tecnico tecnicoExistente = tecnicoRepository.findById(idTecnico)
-                .orElseThrow(()  ->   new Exception("Tecnico con ID "+idTecnico+" no encontrado"));
+                .orElseThrow(()  ->   new ResourceNotFoundException("Tecnico con ID "+idTecnico+" no encontrado"));
         tecnicoExistente.setNombres(tecnico.getNombres());
         tecnicoExistente.setNombres(tecnico.getNombres());
         tecnicoExistente.setApellidosPaterno(tecnico.getApellidosPaterno());
@@ -57,10 +57,9 @@ public class TecnicoServiceImpl implements TecnicoService {
     }
 
     @Override
-    @SneakyThrows
     public void eliminarTecnico(Long idTecnico) {
         tecnicoRepository.findById(idTecnico)
-                .orElseThrow(()  ->   new Exception("Tecnico con ID "+ idTecnico+" no encontrado"));
+                .orElseThrow(()  ->   new ResourceNotFoundException("Tecnico con ID "+ idTecnico+" no encontrado"));
         tecnicoRepository.deleteById(idTecnico);
     }
 }
