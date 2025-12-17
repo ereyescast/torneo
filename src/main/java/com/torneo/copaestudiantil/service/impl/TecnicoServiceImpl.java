@@ -6,6 +6,7 @@ import com.torneo.copaestudiantil.repository.TecnicoRepository;
 import com.torneo.copaestudiantil.service.TecnicoService;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,9 @@ public class TecnicoServiceImpl implements TecnicoService {
     @Autowired
     private TecnicoRepository tecnicoRepository;
 
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
+       
     @Override
     public Tecnico registrarTecnico(Tecnico tecnico) {
         return tecnicoRepository.save(tecnico);
