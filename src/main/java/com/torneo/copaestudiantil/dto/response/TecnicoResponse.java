@@ -1,11 +1,15 @@
-package com.torneo.copaestudiantil.dto;
+package com.torneo.copaestudiantil.dto.response;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
 
 @Data
-public class TecnicoRequest {
+@Builder
+public class TecnicoResponse {
+
+    private Long id;
     private String nombres;
     private String apellidosPaterno;
     private String apellidosMaterno;
@@ -13,4 +17,5 @@ public class TecnicoRequest {
     private String numeroDocumento;
     private String nacionalidad;
     private LocalDate fechaNac;
+    private String profileImage;
 }

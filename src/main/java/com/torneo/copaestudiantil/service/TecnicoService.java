@@ -1,26 +1,33 @@
 package com.torneo.copaestudiantil.service;
 
-import com.torneo.copaestudiantil.dto.TecnicoDTO;
-import com.torneo.copaestudiantil.dto.TecnicoRequest;
-import com.torneo.copaestudiantil.entity.Tecnico;
+import com.torneo.copaestudiantil.dto.request.TecnicoRequest;
+import com.torneo.copaestudiantil.dto.response.TecnicoResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface TecnicoService {
 
-    TecnicoDTO registrarTecnico(TecnicoRequest request);
+    // CREATE
+    TecnicoResponse registrar(TecnicoRequest request);
 
-    List<Tecnico> listarTecnicos();
+    // READ - BY ID
+    TecnicoResponse obtenerPorId(Long id);
 
-    Optional<Tecnico> buscarPorNombre (String nombres);
+    // READ - SEARCH WITH FILTERS + PAGINATION
+    Page<TecnicoResponse> buscar(
+            String nombres,
+            String numeroDocumento,
+            String nacionalidad,
+            Pageable pageable
+    );
 
-    Optional<Tecnico> buscarPorId (Long id);
+    // UPDATE
+    TecnicoResponse actualizar(Long id, TecnicoRequest request);
 
-    Tecnico actualizarTecnico (Long idTecnico, TecnicoRequest request);
-    
-    void eliminarTecnico(Long idTecnico);
+    // DELETE (lógico)
+    void eliminar(Long id);
 
-
+    // UPLOAD IMAGE
+    TecnicoResponse subirImagen(Long id, MultipartFile file);
 }

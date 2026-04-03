@@ -7,11 +7,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "estadisticas_jugadores",
+        name = "categorias",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {
-                        "jugador_id",
-                        "partido_id"
+                        "organizador_id",
+                        "edicion_id",
+                        "anio_nacimiento",
+                        "nivel"
                 })
         }
 )
@@ -20,7 +22,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EstadisticaJugador {
+public class Categoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,44 +32,32 @@ public class EstadisticaJugador {
     @Column(name = "organizador_id", nullable = false)
     private Long organizadorId;
 
-    // 🏆 Edición
+    // 📅 Relación con Edición
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "edicion_id", nullable = false)
     private EdicionTorneo edicion;
 
-    // ⚽ Partido
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "partido_id", nullable = false)
-    private Partido partido;
+    // 🎂 Año de nacimiento (ej: 2016)
+    @Column(name = "anio_nacimiento", nullable = false)
+    private Integer anioNacimiento;
 
-    // 👶 Jugador
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "jugador_id", nullable = false)
-    private Jugador jugador;
+    // 🏆 Nivel
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private NivelCompetencia nivel;
 
-    // 👕 Equipo (en ese partido)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "equipo_id", nullable = false)
-    private Equipo equipo;
+    // ⚽ Modalidad
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private ModalidadJuego modalidad;
 
-    // 📊 Estadísticas
+    // 🔢 Cupos máximos por equipo (opcional futuro)
+    @Column(name = "max_jugadores_por_equipo")
+    private Integer maxJugadoresPorEquipo;
+
+    // 🔄 Activa o no
     @Column(nullable = false)
-    private Integer goles = 0;
-
-    @Column(name = "asistencias", nullable = false)
-    private Integer asistencias = 0;
-
-    @Column(name = "tarjetas_amarillas", nullable = false)
-    private Integer tarjetasAmarillas = 0;
-
-    @Column(name = "tarjetas_rojas", nullable = false)
-    private Integer tarjetasRojas = 0;
-
-    @Column(name = "minutos_jugados")
-    private Integer minutosJugados;
-
-    @Column(nullable = false)
-    private Boolean titular = false;
+    private Boolean activa = true;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;

@@ -1,53 +1,100 @@
 package com.torneo.copaestudiantil.exceptions;
 
-import org.apache.coyote.BadRequestException;
-import org.springframework.dao.DataIntegrityViolationException;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
-import java.util.Map;
-
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException exception){
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getMessage(),
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            ResourceNotFoundException ex,
+            HttpServletRequest request) {
+
+        log.warn("Recurso no encontrado en {}: {}",
+                request.getRequestURI(),
+                ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
-                "Recurso no encontrado");
-        return new ResponseEntity<>(errorResponse,HttpStatus.NOT_FOUND);
+                HttpStatus.NOT_FOUND.name(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException exception){
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getMessage(),
+    public ResponseEntity<ErrorResponse> handleBadRequest(
+            BadRequestException ex,
+            HttpServletRequest request) {
+
+        log.warn("Bad request en {}: {}",
+                request.getRequestURI(),
+                ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Recurso no encontrado");
-        return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
+                HttpStatus.BAD_REQUEST.name(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationsException(MethodArgumentNotValidException exception){
-        Map<String,String> errors = new HashMap<>();
-        exception.getBindingResult().getFieldErrors()
-                .forEach(error->errors.put(error.getField(), error.getDefaultMessage()));
+    public ResponseEntity<ErrorResponse> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
 
-        String errorMessage = "Errores de validación en los campos: " + String.join(",", errors.keySet());
-        ErrorResponse errorResponse = new ErrorResponse(
-                errorMessage,
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .orElse("Datos inválidos");
+
+        log.warn("Error de validación en {}: {}",
+                request.getRequestURI(),
+                message);
+
+        ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Validación fallida");
-        return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
+                HttpStatus.BAD_REQUEST.name(),
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.badRequest().body(error);
     }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneral(
+            Exception ex,
+            HttpServletRequest request) {
+
+        // 🔥 CLAVE: stacktrace COMPLETO
+        log.error("Error interno no controlado en {}",
+                request.getRequestURI(),
+                ex);
+
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.name(),
+                "Error interno del servidor",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(error);
     }
 }

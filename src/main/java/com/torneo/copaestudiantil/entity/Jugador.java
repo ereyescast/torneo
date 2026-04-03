@@ -5,12 +5,10 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(
-        name = "tecnicos",
+        name = "jugadores",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "numero_documento")
         }
@@ -20,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Tecnico {
+public class Jugador {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,25 +27,27 @@ public class Tecnico {
     @Column(nullable = false, length = 100)
     private String nombres;
 
-    @Column(nullable = false, length = 100)
-    private String apellidosPaterno;
+    @Column(name = "apellido_paterno", nullable = false, length = 100)
+    private String apellidoPaterno;
 
-    @Column(length = 100)
-    private String apellidosMaterno;
+    @Column(name = "apellido_materno", nullable = false, length = 100)
+    private String apellidoMaterno;
 
-    @Column(nullable = false, length = 30)
-    private String tipoDocumento;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_documento", nullable = false, length = 30)
+    private TipoDocumento tipoDocumento;
 
-    @Column(name = "numero_documento", nullable = false, length = 20)
+    @Column(name = "numero_documento", nullable = false, length = 50, unique = true)
     private String numeroDocumento;
+
+    @Column(name = "fecha_nacimiento", nullable = false)
+    private LocalDate fechaNacimiento;
 
     @Column(length = 50)
     private String nacionalidad;
 
-    private LocalDate fechaNac;
-
-    @Column(name = "profile_image")
-    private String profileImage; // solo guarda la ruta
+    @Column(name = "profile_image", length = 300)
+    private String profileImage;
 
     @Column(nullable = false)
     private Boolean activo = true;
@@ -57,9 +57,6 @@ public class Tecnico {
 
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
-
-    @OneToMany(mappedBy = "tecnico")
-    private List<TecnicoEquipoEdicion> asignaciones = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

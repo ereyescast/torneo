@@ -1,21 +1,40 @@
 package com.torneo.copaestudiantil.exceptions;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 
-@Data
-@AllArgsConstructor
 public class ErrorResponse {
-    private String message;
-    private int statusCode;
-    private LocalDateTime timestamp;
-    private String errorDetails;
 
-    public ErrorResponse(String message, int statusCode, String errorDetails) {
+    private int status;
+    private String error;
+    private String message;
+    private String path;
+    private LocalDateTime timestamp;
+
+    public ErrorResponse(int status, String error, String message, String path) {
+        this.status = status;
+        this.error = error;
         this.message = message;
-        this.statusCode = statusCode;
-        this.errorDetails = errorDetails;
+        this.path = path;
+        this.timestamp = LocalDateTime.now();
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
     }
 }
