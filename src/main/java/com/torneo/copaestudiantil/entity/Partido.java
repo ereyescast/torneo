@@ -58,6 +58,16 @@ public class Partido {
     @Column(name = "goles_visitante")
     private Integer golesVisitante;
 
+    // 🏁 Fase del torneo (GRUPOS, SEMIFINAL_ORO, FINAL_ORO, etc.)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fase", nullable = false, length = 30)
+    private FasePartido fase;
+
+    // 👥 Grupo al que pertenece (solo aplica cuando fase = GRUPOS; null en eliminatorias)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grupo_id")
+    private Grupo grupo;
+
     // 🔄 Estado del partido
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -77,6 +87,9 @@ public class Partido {
         this.fechaCreacion = LocalDateTime.now();
         if (this.estado == null) {
             this.estado = EstadoPartido.PROGRAMADO;
+        }
+        if (this.fase == null) {
+            this.fase = FasePartido.GRUPOS;
         }
     }
 

@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(columnNames = {
                         "equipo_id",
                         "edicion_id",
-                        "categoria_id"
+                        "categoria_id",
+                        "grupo_id"
                 })
         }
 )
@@ -41,6 +42,14 @@ public class TablaPosicion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
+
+    /**
+     * Grupo al que pertenece esta fila de la tabla.
+     * NULL solo cuando la tabla es global (sin fase de grupos).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grupo_id")
+    private Grupo grupo;
 
     // 📊 Datos acumulados
     private Integer partidosJugados = 0;

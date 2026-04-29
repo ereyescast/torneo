@@ -10,41 +10,51 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/arbitros")
+@RequestMapping("/api/organizadores/{organizadorId}/arbitros")
 @RequiredArgsConstructor
 public class ArbitroController {
 
     private final ArbitroService arbitroService;
 
+    // CREATE
     @PostMapping
     public ResponseEntity<ArbitroResponse> crear(
-            @RequestParam Long organizadorId,
-            @RequestBody ArbitroRequest request
-    ) {
-        return ResponseEntity.ok(arbitroService.crear(organizadorId, request));
+            @PathVariable Long organizadorId,
+            @RequestBody ArbitroRequest request) {
+
+        return ResponseEntity.ok(
+                arbitroService.crear(organizadorId, request)
+        );
     }
 
+    // READ
     @GetMapping
     public ResponseEntity<List<ArbitroResponse>> listar(
-            @RequestParam Long organizadorId
-    ) {
-        return ResponseEntity.ok(arbitroService.listarActivos(organizadorId));
+            @PathVariable Long organizadorId) {
+
+        return ResponseEntity.ok(
+                arbitroService.listarActivos(organizadorId)
+        );
     }
 
+    // UPDATE
     @PutMapping("/{id}")
     public ResponseEntity<ArbitroResponse> actualizar(
-            @RequestParam Long organizadorId,
+            @PathVariable Long organizadorId,
             @PathVariable Long id,
-            @RequestBody ArbitroRequest request
-    ) {
-        return ResponseEntity.ok(arbitroService.actualizar(organizadorId, id, request));
+            @RequestBody ArbitroRequest request) {
+
+        return ResponseEntity.ok(
+                arbitroService.actualizar(organizadorId, id, request)
+        );
     }
 
+    // DELETE (lógico)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> desactivar(
-            @RequestParam Long organizadorId,
-            @PathVariable Long id
-    ) {
+            @PathVariable Long organizadorId,
+            @PathVariable Long id) {
+
         arbitroService.desactivar(organizadorId, id);
         return ResponseEntity.noContent().build();
     }

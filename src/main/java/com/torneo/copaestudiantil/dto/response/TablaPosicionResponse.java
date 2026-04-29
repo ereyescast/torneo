@@ -10,6 +10,12 @@ public class TablaPosicionResponse {
     private Long equipoId;
     private String nombreEquipo;
 
+    /** ID del grupo (null si la tabla es global) */
+    private Long grupoId;
+
+    /** Nombre del grupo, ej: "A", "B" (null si la tabla es global) */
+    private String grupoNombre;
+
     private Integer partidosJugados;
     private Integer partidosGanados;
     private Integer partidosEmpatados;
