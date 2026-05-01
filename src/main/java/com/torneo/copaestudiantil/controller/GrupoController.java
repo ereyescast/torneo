@@ -1,11 +1,13 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.dto.response.*;
 import com.torneo.copaestudiantil.entity.*;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.*;
 import com.torneo.copaestudiantil.service.TablaPosicionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,22 +25,61 @@ public class GrupoController {
     private final EquipoRepository equipoRepository;
     private final TablaPosicionService tablaPosicionService;
 
+    // ─── Mapeos a DTO (sin retornar entidades crudas) ───────────────────────
+
+    private GrupoResponse toGrupoResponse(Grupo g) {
+        EdicionTorneo e = g.getEdicion();
+        Categoria c = g.getCategoria();
+        return GrupoResponse.builder()
+                .id(g.getId())
+                .organizadorId(g.getOrganizadorId())
+                .nombre(g.getNombre())
+                .activo(g.getActivo())
+                .edicion(EdicionTorneoResponse.builder()
+                        .id(e.getId()).nombre(e.getNombre())
+                        .fechaInicio(e.getFechaInicio()).fechaFin(e.getFechaFin())
+                        .activa(e.getActiva()).build())
+                .categoria(CategoriaResponse.builder()
+                        .id(c.getId()).anioNacimiento(c.getAnioNacimiento())
+                        .modalidad(c.getModalidad()).nivel(c.getNivel())
+                        .activa(c.getActiva()).build())
+                .build();
+    }
+
+    private GrupoEquipoResponse toGrupoEquipoResponse(GrupoEquipo ge) {
+        Equipo eq = ge.getEquipo();
+        return GrupoEquipoResponse.builder()
+                .id(ge.getId())
+                .activo(ge.getActivo())
+                .grupo(toGrupoResponse(ge.getGrupo()))
+                .equipo(EquipoResponse.builder()
+                        .id(eq.getId()).nombre(eq.getNombre())
+                        .organizadorId(eq.getOrganizadorId())
+                        .logoUrl(eq.getLogoUrl()).activo(eq.getActivo()).build())
+                .build();
+    }
+
+    // ─── Endpoints ──────────────────────────────────────────────────────────
+
     @GetMapping
-    public List<Grupo> listar(
+    public ResponseEntity<List<GrupoResponse>> listar(
             @RequestParam Long edicionId,
             @RequestParam Long categoriaId) {
-        return grupoRepository.findByEdicionIdAndCategoriaIdAndActivoTrue(edicionId, categoriaId);
+        List<GrupoResponse> result = grupoRepository
+                .findByEdicionIdAndCategoriaIdAndActivoTrue(edicionId, categoriaId)
+                .stream().map(this::toGrupoResponse).toList();
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Grupo> buscarPorId(@PathVariable Long id) {
-        return grupoRepository.findById(id)
-                .map(ResponseEntity::ok)
+    public ResponseEntity<GrupoResponse> buscarPorId(@PathVariable Long id) {
+        Grupo grupo = grupoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado"));
+        return ResponseEntity.ok(toGrupoResponse(grupo));
     }
 
     @PostMapping
-    public ResponseEntity<Grupo> crear(
+    public ResponseEntity<GrupoResponse> crear(
             @RequestParam Long organizadorId,
             @RequestParam Long edicionId,
             @RequestParam Long categoriaId,
@@ -57,14 +98,16 @@ public class GrupoController {
                 .activo(true)
                 .build();
 
-        return ResponseEntity.ok(grupoRepository.save(grupo));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(toGrupoResponse(grupoRepository.save(grupo)));
     }
 
     /**
      * Agrega un equipo al grupo e inicializa su fila en la tabla de posiciones.
+     * Art. 15 — grupos de mínimo 4 equipos.
      */
     @PostMapping("/{grupoId}/equipos/{equipoId}")
-    public ResponseEntity<GrupoEquipo> agregarEquipo(
+    public ResponseEntity<GrupoEquipoResponse> agregarEquipo(
             @PathVariable Long grupoId,
             @PathVariable Long equipoId) {
 
@@ -84,24 +127,25 @@ public class GrupoController {
                 .build();
 
         GrupoEquipo guardado = grupoEquipoRepository.save(grupoEquipo);
-
-        // Inicializar fila en la tabla de posiciones del grupo
         tablaPosicionService.inicializarEquipo(equipo, grupo);
 
-        return ResponseEntity.ok(guardado);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(toGrupoEquipoResponse(guardado));
     }
 
     @GetMapping("/{grupoId}/equipos")
-    public List<GrupoEquipo> listarEquipos(@PathVariable Long grupoId) {
-        return grupoEquipoRepository.findByGrupoId(grupoId);
+    public ResponseEntity<List<GrupoEquipoResponse>> listarEquipos(@PathVariable Long grupoId) {
+        List<GrupoEquipoResponse> result = grupoEquipoRepository.findByGrupoId(grupoId)
+                .stream().map(this::toGrupoEquipoResponse).toList();
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> desactivar(@PathVariable Long id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void desactivar(@PathVariable Long id) {
         Grupo grupo = grupoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado"));
         grupo.setActivo(false);
         grupoRepository.save(grupo);
-        return ResponseEntity.ok().build();
     }
 }
