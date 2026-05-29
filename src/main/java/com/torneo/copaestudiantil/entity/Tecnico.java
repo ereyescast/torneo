@@ -35,8 +35,9 @@ public class Tecnico {
     @Column(length = 100)
     private String apellidosMaterno;
 
-    @Column(nullable = false, length = 30)
-    private String tipoDocumento;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_documento", nullable = false, length = 30)
+    private TipoDocumento tipoDocumento;
 
     @Column(name = "numero_documento", nullable = false, length = 20)
     private String numeroDocumento;
@@ -47,7 +48,7 @@ public class Tecnico {
     private LocalDate fechaNac;
 
     @Column(name = "profile_image")
-    private String profileImage; // solo guarda la ruta
+    private String profileImage;
 
     @Column(nullable = false)
     private Boolean activo = true;

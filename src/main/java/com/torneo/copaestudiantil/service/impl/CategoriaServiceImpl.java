@@ -1,6 +1,10 @@
 package com.torneo.copaestudiantil.service.impl;
 
+import com.torneo.copaestudiantil.common.response.CursorData;
+import com.torneo.copaestudiantil.common.response.CursorUtil;
 import com.torneo.copaestudiantil.dto.request.CategoriaRequest;
+import com.torneo.copaestudiantil.dto.request.search.CategoriaSearchRequest;
+import com.torneo.copaestudiantil.dto.request.search.CursorRequest;
 import com.torneo.copaestudiantil.dto.response.CategoriaResponse;
 import com.torneo.copaestudiantil.dto.response.EdicionTorneoResponse;
 import com.torneo.copaestudiantil.entity.Categoria;
@@ -9,7 +13,10 @@ import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.CategoriaRepository;
 import com.torneo.copaestudiantil.repository.EdicionTorneoRepository;
 import com.torneo.copaestudiantil.service.CategoriaService;
+import com.torneo.copaestudiantil.specification.CategoriaSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +29,26 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
     private final EdicionTorneoRepository edicionRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public CursorData<CategoriaResponse> search(CategoriaSearchRequest request) {
+        if (request == null) request = new CategoriaSearchRequest();
+        CursorRequest pagination = request.getPagination() != null
+                ? request.getPagination() : new CursorRequest();
+
+        int limit = pagination.getLimit();
+        String sortBy = pagination.getSortBy() != null ? pagination.getSortBy() : "id";
+        Sort.Direction dir = "DESC".equalsIgnoreCase(pagination.getDirection())
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        Specification<Categoria> spec = CategoriaSpecification.fromRequest(request);
+        List<Categoria> results = categoriaRepository.findAll(spec, Sort.by(dir, sortBy));
+        List<Categoria> paginados = results.stream().limit(limit + 1L).toList();
+        List<CategoriaResponse> responses = paginados.stream().map(this::toResponse).toList();
+
+        return CursorUtil.build(responses, limit, sortBy, pagination.getPreviousCursor());
+    }
 
     @Override
     public CategoriaResponse crear(CategoriaRequest request) {
@@ -48,19 +75,6 @@ public class CategoriaServiceImpl implements CategoriaService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<CategoriaResponse> listarTodas() {
-        return categoriaRepository.findAll().stream().map(this::toResponse).toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CategoriaResponse> listarPorEdicion(Long edicionId) {
-        return categoriaRepository.findByEdicionId(edicionId)
-                .stream().map(this::toResponse).toList();
-    }
-
-    @Override
     public CategoriaResponse actualizar(Long id, CategoriaRequest request) {
         Categoria categoria = findById(id);
         EdicionTorneo edicion = edicionRepository.findById(request.getEdicionId())
@@ -72,6 +86,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setNivel(request.getNivel());
         categoria.setModalidad(request.getModalidad());
         categoria.setMaxJugadoresPorEquipo(request.getMaxJugadoresPorEquipo());
+        categoria.setActiva(request.getActiva() != null ? request.getActiva() : categoria.getActiva());
 
         return toResponse(categoriaRepository.save(categoria));
     }
@@ -93,22 +108,15 @@ public class CategoriaServiceImpl implements CategoriaService {
         if (c.getEdicion() != null) {
             EdicionTorneo e = c.getEdicion();
             edicionResponse = EdicionTorneoResponse.builder()
-                    .id(e.getId())
-                    .nombre(e.getNombre())
-                    .fechaInicio(e.getFechaInicio())
-                    .fechaFin(e.getFechaFin())
-                    .activa(e.getActiva())
-                    .build();
+                    .id(e.getId()).nombre(e.getNombre())
+                    .fechaInicio(e.getFechaInicio()).fechaFin(e.getFechaFin())
+                    .activa(e.getActiva()).build();
         }
         return CategoriaResponse.builder()
-                .id(c.getId())
-                .organizadorId(c.getOrganizadorId())
-                .edicion(edicionResponse)
-                .anioNacimiento(c.getAnioNacimiento())
-                .nivel(c.getNivel())
-                .modalidad(c.getModalidad())
+                .id(c.getId()).organizadorId(c.getOrganizadorId())
+                .edicion(edicionResponse).anioNacimiento(c.getAnioNacimiento())
+                .nivel(c.getNivel()).modalidad(c.getModalidad())
                 .maxJugadoresPorEquipo(c.getMaxJugadoresPorEquipo())
-                .activa(c.getActiva())
-                .build();
+                .activa(c.getActiva()).build();
     }
 }

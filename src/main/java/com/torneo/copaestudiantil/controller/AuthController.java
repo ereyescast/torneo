@@ -1,5 +1,7 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
 import com.torneo.copaestudiantil.dto.request.LoginRequest;
 import com.torneo.copaestudiantil.dto.request.RegisterRequest;
 import com.torneo.copaestudiantil.dto.response.AuthResponse;
@@ -17,22 +19,18 @@ public class AuthController {
 
     private final AuthService authService;
 
-    /**
-     * POST /api/auth/login
-     * Body: { "email": "admin@torneo.com", "password": "12345678" }
-     * Retorna: { "token": "eyJ...", "tipo": "Bearer", "rol": "ADMIN", ... }
-     */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(authService.login(request), CodigoNegocio.S_AUT_200_001));
     }
 
-    /**
-     * POST /api/auth/register
-     * Body: { "nombre": "Juan", "email": "juan@torneo.com", "password": "12345678", "rol": "ORGANIZADOR" }
-     */
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(authService.register(request),
+                        CodigoNegocio.S_AUT_201_001));
     }
 }

@@ -1,28 +1,22 @@
 package com.torneo.copaestudiantil.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import com.torneo.copaestudiantil.entity.TipoDocumento;
+import lombok.*;
 
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TecnicoRequest {
 
-    @NotBlank
     private String nombres;
-
-    @NotBlank
     private String apellidosPaterno;
-
     private String apellidosMaterno;
-
-    @NotBlank
-    private String tipoDocumento;
-
-    @NotBlank
+    private TipoDocumento tipoDocumento;
     private String numeroDocumento;
-
     private String nacionalidad;
-
     private LocalDate fechaNac;
 }

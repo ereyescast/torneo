@@ -17,4 +17,5 @@ public class JugadorRequest {
     private String numeroDocumento;
     private LocalDate fechaNacimiento;
     private String nacionalidad;
+    private Boolean activo;
 }

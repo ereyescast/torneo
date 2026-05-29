@@ -2,11 +2,13 @@ package com.torneo.copaestudiantil.repository;
 
 import com.torneo.copaestudiantil.entity.TablaPosicion;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface TablaPosicionRepository extends JpaRepository<TablaPosicion, Long> {
+public interface TablaPosicionRepository extends JpaRepository<TablaPosicion, Long>,
+        JpaSpecificationExecutor<TablaPosicion> {
 
     /**
      * Busca la fila de un equipo en la tabla de su grupo específico.

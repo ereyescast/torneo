@@ -1,14 +1,16 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
+import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.dto.request.SedeRequest;
+import com.torneo.copaestudiantil.dto.request.search.SedeSearchRequest;
 import com.torneo.copaestudiantil.dto.response.SedeResponse;
 import com.torneo.copaestudiantil.service.SedeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/sedes")
@@ -17,36 +19,35 @@ public class SedeController {
 
     private final SedeService sedeService;
 
-    @GetMapping
-    public ResponseEntity<List<SedeResponse>> listar() {
-        return ResponseEntity.ok(sedeService.listarTodas());
+    @PostMapping("/search")
+    public ResponseEntity<ApiResponse<CursorData<SedeResponse>>> search(
+            @RequestBody SedeSearchRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(sedeService.search(request), CodigoNegocio.S_SED_200_002));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SedeResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(sedeService.obtenerPorId(id));
-    }
-
-    @GetMapping("/organizador/{organizadorId}")
-    public ResponseEntity<List<SedeResponse>> listarPorOrganizador(@PathVariable Long organizadorId) {
-        return ResponseEntity.ok(sedeService.listarPorOrganizador(organizadorId));
+    public ResponseEntity<ApiResponse<SedeResponse>> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(sedeService.obtenerPorId(id), CodigoNegocio.S_SED_200_001));
     }
 
     @PostMapping
-    public ResponseEntity<SedeResponse> crear(@RequestBody SedeRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(sedeService.crear(request));
+    public ResponseEntity<ApiResponse<SedeResponse>> crear(@RequestBody SedeRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(sedeService.crear(request), CodigoNegocio.S_SED_201_001));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SedeResponse> actualizar(
-            @PathVariable Long id,
-            @RequestBody SedeRequest request) {
-        return ResponseEntity.ok(sedeService.actualizar(id, request));
+    public ResponseEntity<ApiResponse<SedeResponse>> actualizar(
+            @PathVariable Long id, @RequestBody SedeRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(sedeService.actualizar(id, request), CodigoNegocio.S_SED_200_003));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desactivar(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> desactivar(@PathVariable Long id) {
         sedeService.desactivar(id);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_SED_204_001));
     }
 }

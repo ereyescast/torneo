@@ -4,11 +4,13 @@ import com.torneo.copaestudiantil.entity.Categoria;
 import com.torneo.copaestudiantil.entity.EdicionTorneo;
 import com.torneo.copaestudiantil.entity.NivelCompetencia;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
+public interface CategoriaRepository extends JpaRepository<Categoria, Long>,
+        JpaSpecificationExecutor<Categoria> {
 
     // 🔎 Buscar categorías por edición
     List<Categoria> findByEdicion(EdicionTorneo edicion);
@@ -18,9 +20,11 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
 
     // 🔎 Buscar categorías activas
     List<Categoria> findByActivaTrue();
-
+    List<Categoria> findByActiva(Boolean activa);
     // 🔎 Buscar categorías activas por edición
     List<Categoria> findByEdicionIdAndActivaTrue(Long edicionId);
+    List<Categoria> findByEdicionIdAndActiva(Long edicionId, Boolean activa);
+
 
     // 🔎 Validar que no se repita combinación en la misma edición
     Optional<Categoria> findByEdicionAndAnioNacimientoAndNivel(
@@ -34,4 +38,5 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
 
     // 🔎 Buscar por organizador y edición
     List<Categoria> findByOrganizadorIdAndEdicionId(Long organizadorId, Long edicionId);
+    List<Categoria> findByOrganizadorIdAndActiva(Long organizadorId, Boolean activa);
 }

@@ -27,29 +27,23 @@ public class ImagenController {
 
     @GetMapping("/tecnicos/{id}")
     public ResponseEntity<Resource> obtenerImagenTecnico(@PathVariable Long id) {
-
         Tecnico tecnico = tecnicoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
 
-        if (tecnico.getProfileImage() == null) {
+        if (tecnico.getProfileImage() == null)
             throw new ResourceNotFoundException("El técnico no tiene imagen");
-        }
 
         try {
             Path path = Paths.get(uploadDir)
-                    .resolve(tecnico.getProfileImage())
-                    .normalize();
-
+                    .resolve(tecnico.getProfileImage()).normalize();
             Resource resource = new UrlResource(path.toUri());
 
-            if (!resource.exists()) {
+            if (!resource.exists())
                 throw new ResourceNotFoundException("Imagen no encontrada");
-            }
 
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
-
         } catch (MalformedURLException e) {
             throw new ResourceNotFoundException("Error al cargar la imagen");
         }

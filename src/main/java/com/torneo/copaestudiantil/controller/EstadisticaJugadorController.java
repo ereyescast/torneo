@@ -1,5 +1,7 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
 import com.torneo.copaestudiantil.dto.response.*;
 import com.torneo.copaestudiantil.entity.*;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
@@ -23,13 +25,10 @@ public class EstadisticaJugadorController {
     private final EquipoRepository equipoRepository;
     private final EdicionTorneoRepository edicionTorneoRepository;
 
-    // ─── Mapeo a DTO (ya no devuelve la entidad cruda) ──────────────────────
-
     private EstadisticaJugadorResponse toResponse(EstadisticaJugador est) {
         Jugador j = est.getJugador();
         Equipo eq = est.getEquipo();
         EdicionTorneo ed = est.getEdicion();
-
         return EstadisticaJugadorResponse.builder()
                 .id(est.getId())
                 .organizadorId(est.getOrganizadorId())
@@ -60,40 +59,37 @@ public class EstadisticaJugadorController {
                 .build();
     }
 
-    // ─── Endpoints ──────────────────────────────────────────────────────────
-
     @GetMapping("/partido/{partidoId}")
-    public ResponseEntity<List<EstadisticaJugadorResponse>> listarPorPartido(
+    public ResponseEntity<ApiResponse<List<EstadisticaJugadorResponse>>> listarPorPartido(
             @PathVariable Long partidoId) {
-        return ResponseEntity.ok(
+        return ResponseEntity.ok(ApiResponse.ok(
                 estadisticaRepository.findByPartidoId(partidoId)
-                        .stream().map(this::toResponse).toList());
+                        .stream().map(this::toResponse).toList(),
+                CodigoNegocio.S_PAR_200_002));
     }
 
     @GetMapping("/jugador/{jugadorId}/edicion/{edicionId}")
-    public ResponseEntity<List<EstadisticaJugadorResponse>> listarPorJugadorYEdicion(
-            @PathVariable Long jugadorId,
-            @PathVariable Long edicionId) {
-        return ResponseEntity.ok(
+    public ResponseEntity<ApiResponse<List<EstadisticaJugadorResponse>>> listarPorJugadorYEdicion(
+            @PathVariable Long jugadorId, @PathVariable Long edicionId) {
+        return ResponseEntity.ok(ApiResponse.ok(
                 estadisticaRepository.findByJugadorIdAndEdicionId(jugadorId, edicionId)
-                        .stream().map(this::toResponse).toList());
+                        .stream().map(this::toResponse).toList(),
+                CodigoNegocio.S_PAR_200_002));
     }
 
     @GetMapping("/equipo/{equipoId}/edicion/{edicionId}")
-    public ResponseEntity<List<EstadisticaJugadorResponse>> listarPorEquipoYEdicion(
-            @PathVariable Long equipoId,
-            @PathVariable Long edicionId) {
-        return ResponseEntity.ok(
+    public ResponseEntity<ApiResponse<List<EstadisticaJugadorResponse>>> listarPorEquipoYEdicion(
+            @PathVariable Long equipoId, @PathVariable Long edicionId) {
+        return ResponseEntity.ok(ApiResponse.ok(
                 estadisticaRepository.findByEquipoIdAndEdicionId(equipoId, edicionId)
-                        .stream().map(this::toResponse).toList());
+                        .stream().map(this::toResponse).toList(),
+                CodigoNegocio.S_PAR_200_002));
     }
 
     @PostMapping
-    public ResponseEntity<EstadisticaJugadorResponse> registrar(
-            @RequestParam Long jugadorId,
-            @RequestParam Long partidoId,
-            @RequestParam Long equipoId,
-            @RequestParam Long edicionId,
+    public ResponseEntity<ApiResponse<EstadisticaJugadorResponse>> registrar(
+            @RequestParam Long jugadorId, @RequestParam Long partidoId,
+            @RequestParam Long equipoId, @RequestParam Long edicionId,
             @RequestParam Long organizadorId,
             @RequestParam(defaultValue = "0") Integer goles,
             @RequestParam(defaultValue = "0") Integer asistencias,
@@ -115,26 +111,19 @@ public class EstadisticaJugadorController {
         EdicionTorneo edicion = edicionTorneoRepository.findById(edicionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Edición no encontrada"));
 
-        EstadisticaJugador estadistica = EstadisticaJugador.builder()
-                .organizadorId(organizadorId)
-                .jugador(jugador)
-                .partido(partido)
-                .equipo(equipo)
-                .edicion(edicion)
-                .goles(goles)
-                .asistencias(asistencias)
-                .tarjetasAmarillas(tarjetasAmarillas)
-                .tarjetasRojas(tarjetasRojas)
-                .minutosJugados(minutosJugados)
-                .titular(titular)
-                .build();
+        EstadisticaJugador est = EstadisticaJugador.builder()
+                .organizadorId(organizadorId).jugador(jugador).partido(partido)
+                .equipo(equipo).edicion(edicion).goles(goles).asistencias(asistencias)
+                .tarjetasAmarillas(tarjetasAmarillas).tarjetasRojas(tarjetasRojas)
+                .minutosJugados(minutosJugados).titular(titular).build();
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(toResponse(estadisticaRepository.save(estadistica)));
+                .body(ApiResponse.created(toResponse(estadisticaRepository.save(est)),
+                        CodigoNegocio.S_PAR_200_003));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EstadisticaJugadorResponse> actualizar(
+    public ResponseEntity<ApiResponse<EstadisticaJugadorResponse>> actualizar(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") Integer goles,
             @RequestParam(defaultValue = "0") Integer asistencias,
@@ -142,15 +131,16 @@ public class EstadisticaJugadorController {
             @RequestParam(defaultValue = "0") Integer tarjetasRojas,
             @RequestParam(required = false) Integer minutosJugados) {
 
-        EstadisticaJugador estadistica = estadisticaRepository.findById(id)
+        EstadisticaJugador est = estadisticaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Estadística no encontrada"));
 
-        estadistica.setGoles(goles);
-        estadistica.setAsistencias(asistencias);
-        estadistica.setTarjetasAmarillas(tarjetasAmarillas);
-        estadistica.setTarjetasRojas(tarjetasRojas);
-        estadistica.setMinutosJugados(minutosJugados);
+        est.setGoles(goles);
+        est.setAsistencias(asistencias);
+        est.setTarjetasAmarillas(tarjetasAmarillas);
+        est.setTarjetasRojas(tarjetasRojas);
+        est.setMinutosJugados(minutosJugados);
 
-        return ResponseEntity.ok(toResponse(estadisticaRepository.save(estadistica)));
+        return ResponseEntity.ok(ApiResponse.ok(toResponse(estadisticaRepository.save(est)),
+                CodigoNegocio.S_PAR_200_003));
     }
 }

@@ -5,5 +5,6 @@ public enum EstadoPartido {
     EN_JUEGO,
     FINALIZADO,
     SUSPENDIDO,
-    WO
+    WO,
+    CANCELADO
 }

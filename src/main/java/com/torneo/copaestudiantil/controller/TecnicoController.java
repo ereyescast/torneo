@@ -1,13 +1,14 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
+import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.dto.request.TecnicoRequest;
+import com.torneo.copaestudiantil.dto.request.search.TecnicoSearchRequest;
 import com.torneo.copaestudiantil.dto.response.TecnicoResponse;
 import com.torneo.copaestudiantil.service.TecnicoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,70 +21,59 @@ public class TecnicoController {
 
     private final TecnicoService tecnicoService;
 
-    // ================================
-    // CREATE
-    // ================================
-    @PostMapping
-    public ResponseEntity<TecnicoResponse> registrar(
-            @Valid @RequestBody TecnicoRequest request) {
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(tecnicoService.registrar(request));
-    }
-
-    // ================================
-    // READ - LIST WITH FILTERS
-    // ================================
-    @GetMapping
-    public ResponseEntity<Page<TecnicoResponse>> buscar(
-            @RequestParam(required = false) String nombres,
-            @RequestParam(required = false) String numeroDocumento,
-            @RequestParam(required = false) String nacionalidad,
-            @PageableDefault(size = 10, sort = "id") Pageable pageable) {
-
+    /**
+     * POST /api/tecnicos/search
+     * Búsqueda con filtros dinámicos y cursor.
+     *
+     * Body ejemplo:
+     * {
+     *   "activo": true,
+     *   "nombres": "Roberto",
+     *   "pagination": { "limit": 20, "nextCursor": null }
+     * }
+     */
+    @PostMapping("/search")
+    public ResponseEntity<ApiResponse<CursorData<TecnicoResponse>>> search(
+            @RequestBody TecnicoSearchRequest request) {
         return ResponseEntity.ok(
-                tecnicoService.buscar(nombres, numeroDocumento, nacionalidad, pageable)
-        );
+                ApiResponse.ok(tecnicoService.search(request), CodigoNegocio.S_TEC_200_002));
     }
 
-    // ================================
-    // READ - BY ID
-    // ================================
     @GetMapping("/{id}")
-    public ResponseEntity<TecnicoResponse> obtenerPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(tecnicoService.obtenerPorId(id));
+    public ResponseEntity<ApiResponse<TecnicoResponse>> obtenerPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(tecnicoService.obtenerPorId(id), CodigoNegocio.S_TEC_200_001));
     }
 
-    // ================================
-    // UPDATE
-    // ================================
+    @PostMapping
+    public ResponseEntity<ApiResponse<TecnicoResponse>> registrar(
+            @Valid @RequestBody TecnicoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(tecnicoService.registrar(request),
+                        CodigoNegocio.S_TEC_201_001));
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<TecnicoResponse> actualizar(
+    public ResponseEntity<ApiResponse<TecnicoResponse>> actualizar(
             @PathVariable Long id,
             @Valid @RequestBody TecnicoRequest request) {
-
-        return ResponseEntity.ok(tecnicoService.actualizar(id, request));
+        return ResponseEntity.ok(
+                ApiResponse.ok(tecnicoService.actualizar(id, request),
+                        CodigoNegocio.S_TEC_200_003));
     }
 
-    // ================================
-    // DELETE (LÓGICO)
-    // ================================
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void eliminar(@PathVariable Long id) {
-        tecnicoService.eliminar(id);
-    }
-
-    // ================================
-    // SUBIR IMAGEN
-    // ================================
     @PutMapping("/{id}/imagen")
-    public ResponseEntity<TecnicoResponse> subirImagen(
+    public ResponseEntity<ApiResponse<TecnicoResponse>> subirImagen(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
-
         return ResponseEntity.ok(
-                tecnicoService.subirImagen(id, file)
-        );
+                ApiResponse.ok(tecnicoService.subirImagen(id, file),
+                        CodigoNegocio.S_TEC_200_003));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> eliminar(@PathVariable Long id) {
+        tecnicoService.eliminar(id);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_TEC_204_001));
     }
 }

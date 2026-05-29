@@ -1,5 +1,7 @@
 package com.torneo.copaestudiantil.dto.response;
 
+import com.torneo.copaestudiantil.common.response.HasId;
+import com.torneo.copaestudiantil.common.response.HasSortValue;
 import lombok.*;
 
 @Getter
@@ -7,7 +9,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EquipoResponse {
+public class EquipoResponse implements HasId, HasSortValue {
+
     private Long id;
     private Long organizadorId;
     private EdicionTorneoResponse edicion;
@@ -16,4 +19,13 @@ public class EquipoResponse {
     private String nombre;
     private String logoUrl;
     private Boolean activo;
+
+    @Override
+    public Object getSortValue(String field) {
+        return switch (field) {
+            case "nombre"        -> nombre;
+            case "organizadorId" -> organizadorId;
+            default              -> id;
+        };
+    }
 }

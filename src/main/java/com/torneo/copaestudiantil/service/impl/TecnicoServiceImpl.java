@@ -1,18 +1,21 @@
 package com.torneo.copaestudiantil.service.impl;
 
+import com.torneo.copaestudiantil.common.response.CursorData;
+import com.torneo.copaestudiantil.common.response.CursorUtil;
 import com.torneo.copaestudiantil.dto.request.TecnicoRequest;
+import com.torneo.copaestudiantil.dto.request.search.CursorRequest;
+import com.torneo.copaestudiantil.dto.request.search.TecnicoSearchRequest;
 import com.torneo.copaestudiantil.dto.response.TecnicoResponse;
 import com.torneo.copaestudiantil.entity.Tecnico;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
-import com.torneo.copaestudiantil.mapper.TecnicoMapper;
 import com.torneo.copaestudiantil.repository.TecnicoRepository;
 import com.torneo.copaestudiantil.service.TecnicoService;
 import com.torneo.copaestudiantil.specification.TecnicoSpecification;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,73 +32,65 @@ import java.nio.file.Paths;
 public class TecnicoServiceImpl implements TecnicoService {
 
     private final TecnicoRepository tecnicoRepository;
-    private final TecnicoMapper tecnicoMapper;
 
-    // ================================
-    // CREATE
-    // ================================
+    @Value("${app.upload.dir}")
+    private String uploadDir;
+
+    // ── Search con cursor ────────────────────────────────────────────────────
+
+    @Override
+    public CursorData<TecnicoResponse> search(TecnicoSearchRequest request) {
+        if (request == null) request = new TecnicoSearchRequest();
+
+        CursorRequest pagination = request.getPagination() != null
+                ? request.getPagination() : new CursorRequest();
+
+        int limit        = pagination.getLimit();
+        String sortBy    = pagination.getSortBy() != null ? pagination.getSortBy() : "id";
+        Sort.Direction dir = "DESC".equalsIgnoreCase(pagination.getDirection())
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        Specification<Tecnico> spec = TecnicoSpecification.fromRequest(request);
+        List<Tecnico> results = tecnicoRepository.findAll(spec, Sort.by(dir, sortBy));
+        List<Tecnico> paginados = results.stream().limit(limit + 1L).toList();
+        List<TecnicoResponse> responses = paginados.stream().map(this::toResponse).toList();
+
+        return CursorUtil.build(responses, limit, sortBy, pagination.getPreviousCursor());
+    }
+
+    // ── CRUD ─────────────────────────────────────────────────────────────────
+
     @Override
     public TecnicoResponse registrar(TecnicoRequest request) {
-
         if (tecnicoRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
             throw new BadRequestException("El número de documento ya está registrado");
         }
 
-        Tecnico tecnico = tecnicoMapper.toEntity(request);
-        tecnico.setActivo(true);
+        Tecnico tecnico = Tecnico.builder()
+                .nombres(request.getNombres())
+                .apellidosPaterno(request.getApellidosPaterno())
+                .apellidosMaterno(request.getApellidosMaterno())
+                .tipoDocumento(request.getTipoDocumento())
+                .numeroDocumento(request.getNumeroDocumento())
+                .nacionalidad(request.getNacionalidad())
+                .fechaNac(request.getFechaNac())
+                .activo(true)
+                .build();
 
-        tecnicoRepository.save(tecnico);
-
-        return tecnicoMapper.toResponse(tecnico);
+        return toResponse(tecnicoRepository.save(tecnico));
     }
 
-    // ================================
-    // READ BY ID
-    // ================================
     @Override
     public TecnicoResponse obtenerPorId(Long id) {
-
-        Tecnico tecnico = tecnicoRepository.findById(id)
-                .filter(Tecnico::getActivo)
-                .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
-
-        return tecnicoMapper.toResponse(tecnico);
+        return toResponse(findById(id));
     }
 
-    // ================================
-    // SEARCH + PAGINATION
-    // ================================
-    @Override
-    public Page<TecnicoResponse> buscar(
-            String nombres,
-            String numeroDocumento,
-            String nacionalidad,
-            Pageable pageable) {
-
-        Specification<Tecnico> spec = Specification
-                .where(TecnicoSpecification.activo())
-                .and(TecnicoSpecification.nombresLike(nombres))
-                .and(TecnicoSpecification.documentoEquals(numeroDocumento))
-                .and(TecnicoSpecification.nacionalidadLike(nacionalidad));
-
-        return tecnicoRepository
-                .findAll(spec, pageable)
-                .map(tecnicoMapper::toResponse);
-    }
-
-    // ================================
-    // UPDATE
-    // ================================
     @Override
     public TecnicoResponse actualizar(Long id, TecnicoRequest request) {
-
-        Tecnico tecnico = tecnicoRepository.findById(id)
-                .filter(Tecnico::getActivo)
-                .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
+        Tecnico tecnico = findById(id);
 
         if (!tecnico.getNumeroDocumento().equals(request.getNumeroDocumento())
                 && tecnicoRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
-
             throw new BadRequestException("El número de documento ya está registrado");
         }
 
@@ -106,67 +102,64 @@ public class TecnicoServiceImpl implements TecnicoService {
         tecnico.setNacionalidad(request.getNacionalidad());
         tecnico.setFechaNac(request.getFechaNac());
 
-        return tecnicoMapper.toResponse(tecnico);
+        return toResponse(tecnicoRepository.save(tecnico));
     }
 
-    // ================================
-    // DELETE (LÓGICO)
-    // ================================
     @Override
     public void eliminar(Long id) {
-
-        Tecnico tecnico = tecnicoRepository.findById(id)
-                .filter(Tecnico::getActivo)
-                .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
-
+        Tecnico tecnico = findById(id);
         tecnico.setActivo(false);
+        tecnicoRepository.save(tecnico);
     }
 
-    // ================================
-    // UPLOAD IMAGE
-    // ================================
     @Override
     public TecnicoResponse subirImagen(Long id, MultipartFile file) {
+        Tecnico tecnico = findById(id);
 
-        Tecnico tecnico = tecnicoRepository.findById(id)
-                .filter(Tecnico::getActivo)
-                .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
-
-        if (file.isEmpty()) {
+        if (file.isEmpty())
             throw new BadRequestException("El archivo está vacío");
-        }
-
-        long maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.getSize() > maxSize) {
+        if (file.getSize() > 5 * 1024 * 1024)
             throw new BadRequestException("La imagen no debe superar los 5MB");
-        }
 
         String contentType = file.getContentType();
-
         if (contentType == null ||
                 !(contentType.equalsIgnoreCase("image/jpeg")
-                        || contentType.equalsIgnoreCase("image/png"))) {
-
+                        || contentType.equalsIgnoreCase("image/png")))
             throw new BadRequestException("Formato no soportado. Use JPG o PNG.");
-        }
 
         try {
-            String uploadDir = "uploads/tecnicos/";
-            Files.createDirectories(Paths.get(uploadDir));
-
-            String extension = contentType.equalsIgnoreCase("image/png") ? ".png" : ".jpg";
-            String fileName = "tecnico_" + id + extension;
-
-            Path filePath = Paths.get(uploadDir + fileName);
-
+            String dir = uploadDir + "/tecnicos/";
+            Files.createDirectories(Paths.get(dir));
+            String ext = contentType.equalsIgnoreCase("image/png") ? ".png" : ".jpg";
+            String fileName = "tecnico_" + id + "_" + System.currentTimeMillis() + ext;
+            Path filePath = Paths.get(dir + fileName);
             Files.write(filePath, file.getBytes());
-
-            tecnico.setProfileImage("/" + uploadDir + fileName);
-
-            return tecnicoMapper.toResponse(tecnico);
-
+            tecnico.setProfileImage("/" + dir + fileName);
+            return toResponse(tecnicoRepository.save(tecnico));
         } catch (IOException e) {
             throw new BadRequestException("Error al guardar la imagen");
         }
+    }
+
+    // ── Privados ─────────────────────────────────────────────────────────────
+
+    private Tecnico findById(Long id) {
+        return tecnicoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
+    }
+
+    private TecnicoResponse toResponse(Tecnico t) {
+        return TecnicoResponse.builder()
+                .id(t.getId())
+                .nombres(t.getNombres())
+                .apellidosPaterno(t.getApellidosPaterno())
+                .apellidosMaterno(t.getApellidosMaterno())
+                .tipoDocumento(t.getTipoDocumento())
+                .numeroDocumento(t.getNumeroDocumento())
+                .nacionalidad(t.getNacionalidad())
+                .fechaNac(t.getFechaNac())
+                .profileImage(t.getProfileImage())
+                .activo(t.getActivo())
+                .build();
     }
 }

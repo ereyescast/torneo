@@ -1,5 +1,7 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
 import com.torneo.copaestudiantil.dto.response.*;
 import com.torneo.copaestudiantil.entity.*;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
@@ -24,8 +26,6 @@ public class GrupoController {
     private final CategoriaRepository categoriaRepository;
     private final EquipoRepository equipoRepository;
     private final TablaPosicionService tablaPosicionService;
-
-    // ─── Mapeos a DTO (sin retornar entidades crudas) ───────────────────────
 
     private GrupoResponse toGrupoResponse(Grupo g) {
         EdicionTorneo e = g.getEdicion();
@@ -59,27 +59,25 @@ public class GrupoController {
                 .build();
     }
 
-    // ─── Endpoints ──────────────────────────────────────────────────────────
-
     @GetMapping
-    public ResponseEntity<List<GrupoResponse>> listar(
+    public ResponseEntity<ApiResponse<List<GrupoResponse>>> listar(
             @RequestParam Long edicionId,
             @RequestParam Long categoriaId) {
         List<GrupoResponse> result = grupoRepository
                 .findByEdicionIdAndCategoriaIdAndActivoTrue(edicionId, categoriaId)
                 .stream().map(this::toGrupoResponse).toList();
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.ok(result, CodigoNegocio.S_GRU_200_002));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GrupoResponse> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<GrupoResponse>> buscarPorId(@PathVariable Long id) {
         Grupo grupo = grupoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado"));
-        return ResponseEntity.ok(toGrupoResponse(grupo));
+        return ResponseEntity.ok(ApiResponse.ok(toGrupoResponse(grupo), CodigoNegocio.S_GRU_200_001));
     }
 
     @PostMapping
-    public ResponseEntity<GrupoResponse> crear(
+    public ResponseEntity<ApiResponse<GrupoResponse>> crear(
             @RequestParam Long organizadorId,
             @RequestParam Long edicionId,
             @RequestParam Long categoriaId,
@@ -92,22 +90,16 @@ public class GrupoController {
 
         Grupo grupo = Grupo.builder()
                 .organizadorId(organizadorId)
-                .edicion(edicion)
-                .categoria(categoria)
-                .nombre(nombre)
-                .activo(true)
-                .build();
+                .edicion(edicion).categoria(categoria)
+                .nombre(nombre).activo(true).build();
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(toGrupoResponse(grupoRepository.save(grupo)));
+                .body(ApiResponse.created(toGrupoResponse(grupoRepository.save(grupo)),
+                        CodigoNegocio.S_GRU_201_001));
     }
 
-    /**
-     * Agrega un equipo al grupo e inicializa su fila en la tabla de posiciones.
-     * Art. 15 — grupos de mínimo 4 equipos.
-     */
     @PostMapping("/{grupoId}/equipos/{equipoId}")
-    public ResponseEntity<GrupoEquipoResponse> agregarEquipo(
+    public ResponseEntity<ApiResponse<GrupoEquipoResponse>> agregarEquipo(
             @PathVariable Long grupoId,
             @PathVariable Long equipoId) {
 
@@ -120,32 +112,29 @@ public class GrupoController {
         Equipo equipo = equipoRepository.findById(equipoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
 
-        GrupoEquipo grupoEquipo = GrupoEquipo.builder()
-                .grupo(grupo)
-                .equipo(equipo)
-                .activo(true)
-                .build();
-
-        GrupoEquipo guardado = grupoEquipoRepository.save(grupoEquipo);
+        GrupoEquipo guardado = grupoEquipoRepository.save(
+                GrupoEquipo.builder().grupo(grupo).equipo(equipo).activo(true).build());
         tablaPosicionService.inicializarEquipo(equipo, grupo);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(toGrupoEquipoResponse(guardado));
+                .body(ApiResponse.created(toGrupoEquipoResponse(guardado),
+                        CodigoNegocio.S_GRU_201_002));
     }
 
     @GetMapping("/{grupoId}/equipos")
-    public ResponseEntity<List<GrupoEquipoResponse>> listarEquipos(@PathVariable Long grupoId) {
+    public ResponseEntity<ApiResponse<List<GrupoEquipoResponse>>> listarEquipos(
+            @PathVariable Long grupoId) {
         List<GrupoEquipoResponse> result = grupoEquipoRepository.findByGrupoId(grupoId)
                 .stream().map(this::toGrupoEquipoResponse).toList();
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.ok(result, CodigoNegocio.S_GRU_200_002));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desactivar(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> desactivar(@PathVariable Long id) {
         Grupo grupo = grupoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado"));
         grupo.setActivo(false);
         grupoRepository.save(grupo);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_GRU_200_001));
     }
 }

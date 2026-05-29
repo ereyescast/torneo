@@ -1,5 +1,7 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
 import com.torneo.copaestudiantil.dto.request.InscripcionJugadorRequest;
 import com.torneo.copaestudiantil.dto.response.InscripcionJugadorResponse;
 import com.torneo.copaestudiantil.service.InscripcionJugadorService;
@@ -18,28 +20,32 @@ public class InscripcionJugadorController {
     private final InscripcionJugadorService inscripcionService;
 
     @GetMapping("/equipo/{equipoId}")
-    public ResponseEntity<List<InscripcionJugadorResponse>> listarPorEquipo(
+    public ResponseEntity<ApiResponse<List<InscripcionJugadorResponse>>> listarPorEquipo(
             @PathVariable Long equipoId) {
-        return ResponseEntity.ok(inscripcionService.listarPorEquipo(equipoId));
+        return ResponseEntity.ok(
+                ApiResponse.ok(inscripcionService.listarPorEquipo(equipoId),
+                        CodigoNegocio.S_INS_201_001));
     }
 
     @GetMapping("/edicion/{edicionId}")
-    public ResponseEntity<List<InscripcionJugadorResponse>> listarPorEdicion(
+    public ResponseEntity<ApiResponse<List<InscripcionJugadorResponse>>> listarPorEdicion(
             @PathVariable Long edicionId) {
-        return ResponseEntity.ok(inscripcionService.listarPorEdicion(edicionId));
+        return ResponseEntity.ok(
+                ApiResponse.ok(inscripcionService.listarPorEdicion(edicionId),
+                        CodigoNegocio.S_INS_201_001));
     }
 
     @PostMapping
-    public ResponseEntity<InscripcionJugadorResponse> inscribir(
+    public ResponseEntity<ApiResponse<InscripcionJugadorResponse>> inscribir(
             @RequestBody InscripcionJugadorRequest request) {
-        // Las validaciones de Art. 22 (doble inscripción) y Art. 11 (cupo máximo)
-        // y Art. III (edad por categoría) se ejecutan en el servicio
-        return ResponseEntity.status(HttpStatus.CREATED).body(inscripcionService.inscribir(request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(inscripcionService.inscribir(request),
+                        CodigoNegocio.S_INS_201_001));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desinscribir(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> desinscribir(@PathVariable Long id) {
         inscripcionService.desinscribir(id);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_INS_204_001));
     }
 }

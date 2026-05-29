@@ -1,14 +1,16 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
+import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.dto.request.EquipoRequest;
+import com.torneo.copaestudiantil.dto.request.search.EquipoSearchRequest;
 import com.torneo.copaestudiantil.dto.response.EquipoResponse;
 import com.torneo.copaestudiantil.service.EquipoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/equipos")
@@ -17,38 +19,37 @@ public class EquipoController {
 
     private final EquipoService equipoService;
 
-    @GetMapping
-    public ResponseEntity<List<EquipoResponse>> listarTodos() {
-        return ResponseEntity.ok(equipoService.listarTodos());
+    @PostMapping("/search")
+    public ResponseEntity<ApiResponse<CursorData<EquipoResponse>>> search(
+            @RequestBody EquipoSearchRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(equipoService.search(request), CodigoNegocio.S_EQU_200_002));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EquipoResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(equipoService.obtenerPorId(id));
-    }
-
-    @GetMapping("/edicion/{edicionId}/categoria/{categoriaId}")
-    public ResponseEntity<List<EquipoResponse>> listarPorEdicionYCategoria(
-            @PathVariable Long edicionId,
-            @PathVariable Long categoriaId) {
-        return ResponseEntity.ok(equipoService.listarPorEdicionYCategoria(edicionId, categoriaId));
+    public ResponseEntity<ApiResponse<EquipoResponse>> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(equipoService.obtenerPorId(id), CodigoNegocio.S_EQU_200_001));
     }
 
     @PostMapping
-    public ResponseEntity<EquipoResponse> crear(@RequestBody EquipoRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(equipoService.crear(request));
+    public ResponseEntity<ApiResponse<EquipoResponse>> crear(@RequestBody EquipoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(equipoService.crear(request),
+                        CodigoNegocio.S_EQU_201_001));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EquipoResponse> actualizar(
-            @PathVariable Long id,
-            @RequestBody EquipoRequest request) {
-        return ResponseEntity.ok(equipoService.actualizar(id, request));
+    public ResponseEntity<ApiResponse<EquipoResponse>> actualizar(
+            @PathVariable Long id, @RequestBody EquipoRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(equipoService.actualizar(id, request),
+                        CodigoNegocio.S_EQU_200_003));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desactivar(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> desactivar(@PathVariable Long id) {
         equipoService.desactivar(id);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_EQU_204_001));
     }
 }

@@ -1,5 +1,7 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
 import com.torneo.copaestudiantil.dto.response.TablaPosicionResponse;
 import com.torneo.copaestudiantil.service.TablaPosicionService;
 import lombok.RequiredArgsConstructor;
@@ -15,26 +17,20 @@ public class TablaPosicionController {
 
     private final TablaPosicionService tablaPosicionService;
 
-    /**
-     * Tabla de posiciones de un grupo específico.
-     * GET /api/tabla-posiciones/grupo/{grupoId}
-     */
     @GetMapping("/grupo/{grupoId}")
-    public ResponseEntity<List<TablaPosicionResponse>> obtenerPorGrupo(
-            @PathVariable Long grupoId
-    ) {
-        return ResponseEntity.ok(tablaPosicionService.obtenerTablaPorGrupo(grupoId));
+    public ResponseEntity<ApiResponse<List<TablaPosicionResponse>>> obtenerPorGrupo(
+            @PathVariable Long grupoId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(tablaPosicionService.obtenerTablaPorGrupo(grupoId),
+                        CodigoNegocio.S_GRU_200_002));
     }
 
-    /**
-     * Tabla global de una edición+categoría (todos los grupos).
-     * GET /api/tabla-posiciones?edicionId=1&categoriaId=2
-     */
     @GetMapping
-    public ResponseEntity<List<TablaPosicionResponse>> obtenerTabla(
+    public ResponseEntity<ApiResponse<List<TablaPosicionResponse>>> obtenerTabla(
             @RequestParam Long edicionId,
-            @RequestParam Long categoriaId
-    ) {
-        return ResponseEntity.ok(tablaPosicionService.obtenerTabla(edicionId, categoriaId));
+            @RequestParam Long categoriaId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(tablaPosicionService.obtenerTabla(edicionId, categoriaId),
+                        CodigoNegocio.S_GRU_200_002));
     }
 }

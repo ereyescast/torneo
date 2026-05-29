@@ -1,14 +1,21 @@
 package com.torneo.copaestudiantil.service.impl;
 
+import com.torneo.copaestudiantil.common.response.CursorData;
+import com.torneo.copaestudiantil.common.response.CursorUtil;
 import com.torneo.copaestudiantil.dto.request.JugadorRequest;
+import com.torneo.copaestudiantil.dto.request.search.CursorRequest;
+import com.torneo.copaestudiantil.dto.request.search.JugadorSearchRequest;
 import com.torneo.copaestudiantil.dto.response.JugadorResponse;
 import com.torneo.copaestudiantil.entity.Jugador;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.JugadorRepository;
 import com.torneo.copaestudiantil.service.JugadorService;
+import com.torneo.copaestudiantil.specification.JugadorSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,12 +37,45 @@ public class JugadorServiceImpl implements JugadorService {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
+    // ── Search con cursor enriquecido ────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public CursorData<JugadorResponse> search(JugadorSearchRequest request) {
+        if (request == null) request = new JugadorSearchRequest();
+
+        CursorRequest pagination = request.getPagination() != null
+                ? request.getPagination() : new CursorRequest();
+
+        int limit        = pagination.getLimit();
+        String sortBy    = pagination.getSortBy() != null ? pagination.getSortBy() : "id";
+        String direction = pagination.getDirection();
+        Sort.Direction dir = "DESC".equalsIgnoreCase(direction)
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        // Construir Specification con todos los filtros
+        Specification<Jugador> spec = JugadorSpecification.fromRequest(request);
+
+        // Traer limit+1 para detectar si hay siguiente página
+        List<Jugador> results = jugadorRepository.findAll(spec, Sort.by(dir, sortBy));
+        List<Jugador> paginados = results.stream().limit(limit + 1L).toList();
+
+        // Mapear a response
+        List<JugadorResponse> responses = paginados.stream()
+                .map(this::toResponse).toList();
+
+        // Construir CursorData con cursor enriquecido
+        return CursorUtil.build(responses, limit, sortBy, pagination.getPreviousCursor());
+    }
+
+    // ── CRUD ─────────────────────────────────────────────────────────────────
+
     @Override
     public JugadorResponse crear(JugadorRequest request) {
         if (jugadorRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
-            throw new BadRequestException("Ya existe un jugador con el documento: " + request.getNumeroDocumento());
+            throw new BadRequestException("Ya existe un jugador con el documento: "
+                    + request.getNumeroDocumento());
         }
-
         Jugador jugador = Jugador.builder()
                 .nombres(request.getNombres())
                 .apellidoPaterno(request.getApellidoPaterno())
@@ -46,7 +86,6 @@ public class JugadorServiceImpl implements JugadorService {
                 .nacionalidad(request.getNacionalidad())
                 .activo(true)
                 .build();
-
         return toResponse(jugadorRepository.save(jugador));
     }
 
@@ -61,24 +100,18 @@ public class JugadorServiceImpl implements JugadorService {
     public JugadorResponse obtenerPorDocumento(String numeroDocumento) {
         return jugadorRepository.findByNumeroDocumento(numeroDocumento)
                 .map(this::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Jugador no encontrado con documento: " + numeroDocumento));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<JugadorResponse> listarTodos() {
-        return jugadorRepository.findAll().stream().map(this::toResponse).toList();
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Jugador no encontrado con documento: " + numeroDocumento));
     }
 
     @Override
     public JugadorResponse actualizar(Long id, JugadorRequest request) {
         Jugador jugador = findById(id);
-
         if (!jugador.getNumeroDocumento().equals(request.getNumeroDocumento())
                 && jugadorRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
-            throw new BadRequestException("Ya existe un jugador con el documento: " + request.getNumeroDocumento());
+            throw new BadRequestException("Ya existe un jugador con el documento: "
+                    + request.getNumeroDocumento());
         }
-
         jugador.setNombres(request.getNombres());
         jugador.setApellidoPaterno(request.getApellidoPaterno());
         jugador.setApellidoMaterno(request.getApellidoMaterno());
@@ -86,7 +119,8 @@ public class JugadorServiceImpl implements JugadorService {
         jugador.setNumeroDocumento(request.getNumeroDocumento());
         jugador.setFechaNacimiento(request.getFechaNacimiento());
         jugador.setNacionalidad(request.getNacionalidad());
-
+        jugador.setActivo(request.getActivo() != null
+                ? request.getActivo() : jugador.getActivo());
         return toResponse(jugadorRepository.save(jugador));
     }
 
@@ -100,15 +134,18 @@ public class JugadorServiceImpl implements JugadorService {
     @Override
     public JugadorResponse subirImagen(Long id, MultipartFile file) {
         Jugador jugador = findById(id);
-
-        if (file.isEmpty()) throw new BadRequestException("El archivo está vacío");
-        if (file.getSize() > 5 * 1024 * 1024) throw new BadRequestException("La imagen no debe superar los 5MB");
+        if (!Boolean.TRUE.equals(jugador.getActivo()))
+            throw new BadRequestException("No se puede subir imagen a un jugador inactivo");
+        if (file.isEmpty())
+            throw new BadRequestException("El archivo está vacío");
+        if (file.getSize() > 5 * 1024 * 1024)
+            throw new BadRequestException("La imagen no debe superar los 5MB");
 
         String contentType = file.getContentType();
         if (contentType == null ||
-                !(contentType.equalsIgnoreCase("image/jpeg") || contentType.equalsIgnoreCase("image/png"))) {
+                !(contentType.equalsIgnoreCase("image/jpeg")
+                        || contentType.equalsIgnoreCase("image/png")))
             throw new BadRequestException("Solo se permiten imágenes JPG o PNG");
-        }
 
         try {
             String dir = uploadDir + "/jugadores/";
@@ -124,10 +161,12 @@ public class JugadorServiceImpl implements JugadorService {
         }
     }
 
+    // ── Privados ─────────────────────────────────────────────────────────────
+
     private Jugador findById(Long id) {
         return jugadorRepository.findById(id)
-                .filter(Jugador::getActivo)
-                .orElseThrow(() -> new ResourceNotFoundException("Jugador no encontrado con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Jugador no encontrado con id: " + id));
     }
 
     private JugadorResponse toResponse(Jugador j) {

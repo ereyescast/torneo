@@ -3,7 +3,6 @@ package com.torneo.copaestudiantil.service.impl;
 import com.torneo.copaestudiantil.dto.response.TablaPosicionResponse;
 import com.torneo.copaestudiantil.entity.*;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
-import com.torneo.copaestudiantil.mapper.TablaPosicionMapper;
 import com.torneo.copaestudiantil.repository.TablaPosicionRepository;
 import com.torneo.copaestudiantil.service.TablaPosicionService;
 import lombok.RequiredArgsConstructor;
@@ -14,17 +13,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TablaPosicionServiceImpl implements TablaPosicionService {
 
     private final TablaPosicionRepository tablaRepository;
-    private final TablaPosicionMapper tablaMapper;
 
-    /**
-     * Inicializa la fila del equipo en la tabla de posiciones de su grupo.
-     * Llamar al inscribir un equipo en un grupo.
-     */
     @Override
-    @Transactional
     public void inicializarEquipo(Equipo equipo, Grupo grupo) {
         TablaPosicion tabla = TablaPosicion.builder()
                 .organizadorId(equipo.getOrganizadorId())
@@ -41,36 +35,29 @@ public class TablaPosicionServiceImpl implements TablaPosicionService {
                 .diferenciaGol(0)
                 .puntos(0)
                 .build();
-
         tablaRepository.save(tabla);
     }
 
-    /**
-     * Actualiza la tabla de posiciones al finalizar un partido.
-     * Solo procesa partidos de fase GRUPOS; en fases eliminatorias no hay tabla.
-     */
     @Override
-    @Transactional
     public void actualizarTablaAlFinalizarPartido(Partido partido) {
 
-        // Solo FINALIZADO y WO actualizan la tabla
         if (!EstadoPartido.FINALIZADO.equals(partido.getEstado())
                 && !EstadoPartido.WO.equals(partido.getEstado())) {
             return;
         }
 
-        // Partidos eliminatorios no mueven tabla de posiciones
         if (!FasePartido.GRUPOS.equals(partido.getFase())) {
             return;
         }
 
         if (partido.getGrupo() == null) {
             throw new BadRequestException(
-                    "El partido está en fase GRUPOS pero no tiene grupo asignado (id=" + partido.getId() + ")");
+                    "El partido está en fase GRUPOS pero no tiene grupo asignado (id="
+                            + partido.getId() + ")");
         }
 
-        Long grupoId = partido.getGrupo().getId();
-        Long edicionId = partido.getEdicion().getId();
+        Long grupoId     = partido.getGrupo().getId();
+        Long edicionId   = partido.getEdicion().getId();
         Long categoriaId = partido.getCategoria().getId();
 
         TablaPosicion local = tablaRepository
@@ -85,15 +72,14 @@ public class TablaPosicionServiceImpl implements TablaPosicionService {
                 .orElseThrow(() -> new BadRequestException(
                         "Tabla no encontrada para equipo visitante en grupo " + grupoId));
 
-        int golesLocal = partido.getGolesLocal();
-        int golesVisitante = partido.getGolesVisitante();
+        int golesLocal      = partido.getGolesLocal();
+        int golesVisitante  = partido.getGolesVisitante();
 
         local.setPartidosJugados(local.getPartidosJugados() + 1);
         visitante.setPartidosJugados(visitante.getPartidosJugados() + 1);
 
         local.setGolesFavor(local.getGolesFavor() + golesLocal);
         local.setGolesContra(local.getGolesContra() + golesVisitante);
-
         visitante.setGolesFavor(visitante.getGolesFavor() + golesVisitante);
         visitante.setGolesContra(visitante.getGolesContra() + golesLocal);
 
@@ -106,9 +92,6 @@ public class TablaPosicionServiceImpl implements TablaPosicionService {
             visitante.setPuntos(visitante.getPuntos() + 3);
             local.setPartidosPerdidos(local.getPartidosPerdidos() + 1);
         } else {
-            // Empate: en la Copa Kids hay tanda de penales, pero los puntos
-            // se computan igual (1 pto cada uno). El ganador de penales
-            // se registra en otra lógica si fuera necesario.
             local.setPartidosEmpatados(local.getPartidosEmpatados() + 1);
             visitante.setPartidosEmpatados(visitante.getPartidosEmpatados() + 1);
             local.setPuntos(local.getPuntos() + 1);
@@ -122,24 +105,43 @@ public class TablaPosicionServiceImpl implements TablaPosicionService {
         tablaRepository.save(visitante);
     }
 
-    /** Tabla de un grupo específico, ordenada por puntos/diferencia de gol/goles a favor */
     @Override
+    @Transactional(readOnly = true)
     public List<TablaPosicionResponse> obtenerTablaPorGrupo(Long grupoId) {
         return tablaRepository
                 .findByGrupoIdOrderByPuntosDescDiferenciaGolDescGolesFavorDesc(grupoId)
                 .stream()
-                .map(tablaMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
-    /** Tabla global de edición+categoría (útil si no hay fase de grupos) */
     @Override
+    @Transactional(readOnly = true)
     public List<TablaPosicionResponse> obtenerTabla(Long edicionId, Long categoriaId) {
         return tablaRepository
                 .findByEdicionIdAndCategoriaIdOrderByPuntosDescDiferenciaGolDescGolesFavorDesc(
                         edicionId, categoriaId)
                 .stream()
-                .map(tablaMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
+    }
+
+    private TablaPosicionResponse toResponse(TablaPosicion t) {
+        return TablaPosicionResponse.builder()
+                .id(t.getId())
+                .equipoId(t.getEquipo().getId())
+                .equipoNombre(t.getEquipo().getNombre())
+                .edicionId(t.getEdicion().getId())
+                .categoriaId(t.getCategoria().getId())
+                .grupoId(t.getGrupo() != null ? t.getGrupo().getId() : null)
+                .partidosJugados(t.getPartidosJugados())
+                .partidosGanados(t.getPartidosGanados())
+                .partidosEmpatados(t.getPartidosEmpatados())
+                .partidosPerdidos(t.getPartidosPerdidos())
+                .golesFavor(t.getGolesFavor())
+                .golesContra(t.getGolesContra())
+                .diferenciaGol(t.getDiferenciaGol())
+                .puntos(t.getPuntos())
+                .build();
     }
 }

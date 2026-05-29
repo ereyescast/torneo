@@ -1,14 +1,16 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
+import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.dto.request.CategoriaRequest;
+import com.torneo.copaestudiantil.dto.request.search.CategoriaSearchRequest;
 import com.torneo.copaestudiantil.dto.response.CategoriaResponse;
 import com.torneo.copaestudiantil.service.CategoriaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/categorias")
@@ -17,36 +19,38 @@ public class CategoriaController {
 
     private final CategoriaService categoriaService;
 
-    @GetMapping
-    public ResponseEntity<List<CategoriaResponse>> listar() {
-        return ResponseEntity.ok(categoriaService.listarTodas());
+    @PostMapping("/search")
+    public ResponseEntity<ApiResponse<CursorData<CategoriaResponse>>> search(
+            @RequestBody CategoriaSearchRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(categoriaService.search(request), CodigoNegocio.S_CAT_200_002));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CategoriaResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(categoriaService.obtenerPorId(id));
-    }
-
-    @GetMapping("/edicion/{edicionId}")
-    public ResponseEntity<List<CategoriaResponse>> listarPorEdicion(@PathVariable Long edicionId) {
-        return ResponseEntity.ok(categoriaService.listarPorEdicion(edicionId));
+    public ResponseEntity<ApiResponse<CategoriaResponse>> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(categoriaService.obtenerPorId(id), CodigoNegocio.S_CAT_200_001));
     }
 
     @PostMapping
-    public ResponseEntity<CategoriaResponse> crear(@RequestBody CategoriaRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.crear(request));
+    public ResponseEntity<ApiResponse<CategoriaResponse>> crear(
+            @RequestBody CategoriaRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(categoriaService.crear(request),
+                        CodigoNegocio.S_CAT_201_001));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoriaResponse> actualizar(
-            @PathVariable Long id,
-            @RequestBody CategoriaRequest request) {
-        return ResponseEntity.ok(categoriaService.actualizar(id, request));
+    public ResponseEntity<ApiResponse<CategoriaResponse>> actualizar(
+            @PathVariable Long id, @RequestBody CategoriaRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(categoriaService.actualizar(id, request),
+                        CodigoNegocio.S_CAT_200_003));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desactivar(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> desactivar(@PathVariable Long id) {
         categoriaService.desactivar(id);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_CAT_204_001));
     }
 }

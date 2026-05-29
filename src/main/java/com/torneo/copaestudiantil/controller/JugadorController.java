@@ -1,6 +1,10 @@
 package com.torneo.copaestudiantil.controller;
 
+import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
+import com.torneo.copaestudiantil.common.response.ApiResponse;
+import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.dto.request.JugadorRequest;
+import com.torneo.copaestudiantil.dto.request.search.JugadorSearchRequest;
 import com.torneo.copaestudiantil.dto.response.JugadorResponse;
 import com.torneo.copaestudiantil.service.JugadorService;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/jugadores")
@@ -18,45 +22,88 @@ public class JugadorController {
 
     private final JugadorService jugadorService;
 
-    @GetMapping
-    public ResponseEntity<List<JugadorResponse>> listar() {
-        return ResponseEntity.ok(jugadorService.listarTodos());
+    /**
+     * POST /api/jugadores/search
+     * Búsqueda con filtros dinámicos y paginación por cursor.
+     *
+     * Body ejemplo:
+     * {
+     *   "filters": { "activo": true, "nombres": "Carlos", "anioNacimientoDesde": 2018 },
+     *   "pagination": { "limit": 20, "nextCursor": null }
+     * }
+     */
+    @PostMapping("/search")
+    public ResponseEntity<ApiResponse<CursorData<JugadorResponse>>> search(
+            @RequestBody JugadorSearchRequest request) {
+
+        CursorData<JugadorResponse> data = jugadorService.search(request);
+
+        return ResponseEntity.ok(ApiResponse.ok(data, CodigoNegocio.S_JUG_200_002));
     }
 
+    /**
+     * GET /api/jugadores/{id}
+     * Devuelve siempre — activo o no — para que el frontend pueda editar.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<JugadorResponse> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(jugadorService.obtenerPorId(id));
+    public ResponseEntity<ApiResponse<JugadorResponse>> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(jugadorService.obtenerPorId(id), CodigoNegocio.S_JUG_200_001));
     }
 
+    /**
+     * GET /api/jugadores/documento/{numeroDocumento}
+     */
     @GetMapping("/documento/{numeroDocumento}")
-    public ResponseEntity<JugadorResponse> buscarPorDocumento(
+    public ResponseEntity<ApiResponse<JugadorResponse>> buscarPorDocumento(
             @PathVariable String numeroDocumento) {
-        return ResponseEntity.ok(jugadorService.obtenerPorDocumento(numeroDocumento));
+        return ResponseEntity.ok(
+                ApiResponse.ok(jugadorService.obtenerPorDocumento(numeroDocumento),
+                        CodigoNegocio.S_JUG_200_001));
     }
 
+    /**
+     * POST /api/jugadores
+     */
     @PostMapping
-    public ResponseEntity<JugadorResponse> crear(@RequestBody JugadorRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(jugadorService.crear(request));
+    public ResponseEntity<ApiResponse<JugadorResponse>> crear(
+            @RequestBody JugadorRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(jugadorService.crear(request),
+                        CodigoNegocio.S_JUG_201_001));
     }
 
+    /**
+     * PUT /api/jugadores/{id}
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<JugadorResponse> actualizar(
+    public ResponseEntity<ApiResponse<JugadorResponse>> actualizar(
             @PathVariable Long id,
             @RequestBody JugadorRequest request) {
-        return ResponseEntity.ok(jugadorService.actualizar(id, request));
+        return ResponseEntity.ok(
+                ApiResponse.ok(jugadorService.actualizar(id, request),
+                        CodigoNegocio.S_JUG_200_003));
     }
 
-    // Endpoint de imagen que antes no existía (estaba en JugadorServiceImpl pero sin endpoint)
+    /**
+     * PUT /api/jugadores/{id}/imagen
+     */
     @PutMapping("/{id}/imagen")
-    public ResponseEntity<JugadorResponse> subirImagen(
+    public ResponseEntity<ApiResponse<JugadorResponse>> subirImagen(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(jugadorService.subirImagen(id, file));
+        return ResponseEntity.ok(
+                ApiResponse.ok(jugadorService.subirImagen(id, file),
+                        CodigoNegocio.S_JUG_200_003));
     }
 
+    /**
+     * DELETE /api/jugadores/{id} — soft delete
+     */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desactivar(@PathVariable Long id) {
+
+    public ResponseEntity<ApiResponse<Void>> desactivar(@PathVariable Long id) {
         jugadorService.desactivar(id);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_JUG_204_001));
     }
 }
