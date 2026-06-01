@@ -8,6 +8,9 @@ import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.*;
 import com.torneo.copaestudiantil.service.TablaPosicionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "10. Grupos", description = "Grupos de la fase de grupos del torneo")
 @RestController
 @RequestMapping("/api/grupos")
 @RequiredArgsConstructor
@@ -31,10 +35,8 @@ public class GrupoController {
         EdicionTorneo e = g.getEdicion();
         Categoria c = g.getCategoria();
         return GrupoResponse.builder()
-                .id(g.getId())
-                .organizadorId(g.getOrganizadorId())
-                .nombre(g.getNombre())
-                .activo(g.getActivo())
+                .id(g.getId()).organizadorId(g.getOrganizadorId())
+                .nombre(g.getNombre()).activo(g.getActivo())
                 .edicion(EdicionTorneoResponse.builder()
                         .id(e.getId()).nombre(e.getNombre())
                         .fechaInicio(e.getFechaInicio()).fechaFin(e.getFechaFin())
@@ -49,8 +51,7 @@ public class GrupoController {
     private GrupoEquipoResponse toGrupoEquipoResponse(GrupoEquipo ge) {
         Equipo eq = ge.getEquipo();
         return GrupoEquipoResponse.builder()
-                .id(ge.getId())
-                .activo(ge.getActivo())
+                .id(ge.getId()).activo(ge.getActivo())
                 .grupo(toGrupoResponse(ge.getGrupo()))
                 .equipo(EquipoResponse.builder()
                         .id(eq.getId()).nombre(eq.getNombre())
@@ -59,29 +60,30 @@ public class GrupoController {
                 .build();
     }
 
+    @Operation(summary = "Listar grupos por edición y categoría")
     @GetMapping
     public ResponseEntity<ApiResponse<List<GrupoResponse>>> listar(
-            @RequestParam Long edicionId,
-            @RequestParam Long categoriaId) {
+            @RequestParam Long edicionId, @RequestParam Long categoriaId) {
         List<GrupoResponse> result = grupoRepository
                 .findByEdicionIdAndCategoriaIdAndActivoTrue(edicionId, categoriaId)
                 .stream().map(this::toGrupoResponse).toList();
         return ResponseEntity.ok(ApiResponse.ok(result, CodigoNegocio.S_GRU_200_002));
     }
 
+    @Operation(summary = "Obtener grupo por ID")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<GrupoResponse>> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<GrupoResponse>> buscarPorId(
+            @Parameter(description = "ID del grupo") @PathVariable Long id) {
         Grupo grupo = grupoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado"));
         return ResponseEntity.ok(ApiResponse.ok(toGrupoResponse(grupo), CodigoNegocio.S_GRU_200_001));
     }
 
+    @Operation(summary = "Crear grupo", description = "Ej: Grupo A, Grupo B")
     @PostMapping
     public ResponseEntity<ApiResponse<GrupoResponse>> crear(
-            @RequestParam Long organizadorId,
-            @RequestParam Long edicionId,
-            @RequestParam Long categoriaId,
-            @RequestParam String nombre) {
+            @RequestParam Long organizadorId, @RequestParam Long edicionId,
+            @RequestParam Long categoriaId, @RequestParam String nombre) {
 
         EdicionTorneo edicion = edicionTorneoRepository.findById(edicionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Edición no encontrada"));
@@ -89,23 +91,24 @@ public class GrupoController {
                 .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
         Grupo grupo = Grupo.builder()
-                .organizadorId(organizadorId)
-                .edicion(edicion).categoria(categoria)
-                .nombre(nombre).activo(true).build();
+                .organizadorId(organizadorId).edicion(edicion)
+                .categoria(categoria).nombre(nombre).activo(true).build();
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(toGrupoResponse(grupoRepository.save(grupo)),
                         CodigoNegocio.S_GRU_201_001));
     }
 
+    @Operation(
+            summary = "Agregar equipo al grupo",
+            description = "También inicializa la fila del equipo en la tabla de posiciones"
+    )
     @PostMapping("/{grupoId}/equipos/{equipoId}")
     public ResponseEntity<ApiResponse<GrupoEquipoResponse>> agregarEquipo(
-            @PathVariable Long grupoId,
-            @PathVariable Long equipoId) {
+            @PathVariable Long grupoId, @PathVariable Long equipoId) {
 
-        if (grupoEquipoRepository.existsByGrupoIdAndEquipoId(grupoId, equipoId)) {
+        if (grupoEquipoRepository.existsByGrupoIdAndEquipoId(grupoId, equipoId))
             throw new BadRequestException("El equipo ya pertenece a este grupo");
-        }
 
         Grupo grupo = grupoRepository.findById(grupoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado"));
@@ -121,6 +124,7 @@ public class GrupoController {
                         CodigoNegocio.S_GRU_201_002));
     }
 
+    @Operation(summary = "Listar equipos de un grupo")
     @GetMapping("/{grupoId}/equipos")
     public ResponseEntity<ApiResponse<List<GrupoEquipoResponse>>> listarEquipos(
             @PathVariable Long grupoId) {
@@ -129,6 +133,7 @@ public class GrupoController {
         return ResponseEntity.ok(ApiResponse.ok(result, CodigoNegocio.S_GRU_200_002));
     }
 
+    @Operation(summary = "Desactivar grupo", description = "Soft delete")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> desactivar(@PathVariable Long id) {
         Grupo grupo = grupoRepository.findById(id)

@@ -66,14 +66,6 @@
 			<scope>runtime</scope>
 		</dependency>
 
-
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -124,7 +116,17 @@
 			<artifactId>jackson-datatype-hibernate6</artifactId>
 
 		</dependency>
+
+
+		<!-- OpenPDF — generación de PDF del fixture para WhatsApp -->
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>1.3.43</version>
+		</dependency>
+
 	</dependencies>
+
 
 	<build>
 		<plugins>

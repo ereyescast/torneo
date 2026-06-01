@@ -13,21 +13,21 @@ import java.util.Map;
  * Utilidad para codificar y decodificar cursores enriquecidos.
  *
  * El cursor codifica:
- *   - id          → posición del último registro
- *   - sortField   → campo por el que se ordenó
- *   - sortValue   → valor del sortField en el último registro (para desempate)
- *   - orgId       → organizadorId que generó el cursor (seguridad)
- *   - v           → versión del cursor (compatibilidad futura)
+ *   - id        → posición del último registro
+ *   - sortField → campo por el que se ordenó
+ *   - sortValue → valor del sortField en el último registro (para desempate)
+ *   - orgId     → ID del usuario autenticado que generó el cursor (seguridad)
+ *   - v         → versión del cursor (compatibilidad futura)
  *
- * Ejemplo:
- *   {
- *     "id": 8,
- *     "sortField": "apellidoPaterno",
- *     "sortValue": "Torres",
- *     "orgId": 1,
- *     "v": "1"
- *   }
- *   → "eyJpZCI6OCwic29ydEZpZWxkIjoiYXBlbGxpZG9QYXRlcm5vIiwic29ydFZhbHVlIjoiVG9ycmVzIiwib3JnSWQiOjEsInYiOiIxIn0"
+ * Seguridad: al decodificar se valida que el orgId del cursor
+ * coincida con el usuario autenticado actual. Si no coincide,
+ * se rechaza el cursor — evita data leak entre organizadores.
+
+
+
+
+
+
  */
 @UtilityClass
 public class CursorUtil {
@@ -37,9 +37,9 @@ public class CursorUtil {
 
     // ── Codificación ─────────────────────────────────────────────────────────
 
-    /**
-     * Codifica un cursor con información completa.
-     */
+
+
+
     public static String encode(Long id, String sortField, Object sortValue) {
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
@@ -50,15 +50,16 @@ public class CursorUtil {
             payload.put("v", CURSOR_VERSION);
 
             String json = MAPPER.writeValueAsString(payload);
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(json.getBytes());
+            return Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(json.getBytes());
         } catch (Exception e) {
             return null;
         }
     }
 
-    /**
-     * Codifica un cursor simple (solo por ID — compatibilidad).
-     */
+
+
+
     public static String encode(Long id) {
         return encode(id, "id", id);
     }
@@ -66,7 +67,12 @@ public class CursorUtil {
     // ── Decodificación ───────────────────────────────────────────────────────
 
     /**
-     * Decodifica un cursor y retorna el payload completo.
+     * Decodifica y valida el cursor.
+     *
+     * Retorna null si:
+     *   - El cursor es inválido o está malformado
+     *   - El orgId del cursor NO coincide con el usuario autenticado actual
+     *     (posible intento de acceder a datos de otro organizador)
      */
     public static CursorPayload decode(String cursor) {
         if (cursor == null || cursor.isBlank()) return null;
@@ -81,6 +87,18 @@ public class CursorUtil {
             payload.setOrgId(toLong(map.get("orgId")));
             payload.setVersion(toString(map.get("v")));
 
+            // ── Validación de seguridad ───────────────────────────────────
+            // Si el usuario está autenticado (orgId en TraceContext),
+            // verificar que el cursor pertenece al mismo usuario.
+            Long currentOrgId = TraceContext.getOrganizadorId();
+            if (currentOrgId != null
+                    && payload.getOrgId() != null
+                    && !currentOrgId.equals(payload.getOrgId())) {
+                // Cursor de otro organizador — rechazar silenciosamente
+                // No lanzar excepción para no revelar que el cursor existía
+                return null;
+            }
+
             return payload;
         } catch (Exception e) {
             return null;
@@ -89,6 +107,7 @@ public class CursorUtil {
 
     /**
      * Decodifica solo el ID del cursor (uso rápido en Specifications).
+     * Incluye la validación de orgId.
      */
     public static Long decodeId(String cursor) {
         CursorPayload payload = decode(cursor);
@@ -97,18 +116,18 @@ public class CursorUtil {
 
     // ── Builder de CursorData ────────────────────────────────────────────────
 
-    /**
-     * Construye el CursorData a partir de una lista de resultados.
-     *
-     * Truco: se pide limit+1 registros.
-     * - Si llegaron limit+1 → hay siguiente página → nextCursor apunta al último de limit
-     * - Si llegaron <= limit → no hay más → nextCursor = null
-     *
-     * @param items         lista de resultados (puede tener limit+1 elementos)
-     * @param limit         tamaño de página solicitado
-     * @param sortField     campo por el que se ordenó
-     * @param previousCursor cursor anterior (para hasPreviousPage)
-     */
+
+
+
+
+
+
+
+
+
+
+
+
     public static <T extends HasId & HasSortValue> CursorData<T> build(
             List<T> items,
             int limit,
@@ -143,9 +162,9 @@ public class CursorUtil {
                 .build();
     }
 
-    /**
-     * Versión simplificada para DTOs que solo implementan HasId.
-     */
+
+
+
     public static <T extends HasId> CursorData<T> build(
             List<T> items,
             int limit,

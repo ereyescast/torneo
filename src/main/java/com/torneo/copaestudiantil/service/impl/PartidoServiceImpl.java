@@ -6,6 +6,7 @@ import com.torneo.copaestudiantil.entity.*;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.*;
+import com.torneo.copaestudiantil.service.PagoService;
 import com.torneo.copaestudiantil.service.PartidoService;
 import com.torneo.copaestudiantil.service.TablaPosicionService;
 import lombok.RequiredArgsConstructor;
@@ -19,15 +20,16 @@ import java.util.List;
 @Transactional
 public class PartidoServiceImpl implements PartidoService {
 
-    private final PartidoRepository        partidoRepository;
-    private final EdicionTorneoRepository  edicionRepository;
-    private final CategoriaRepository      categoriaRepository;
-    private final SedeRepository           sedeRepository;
-    private final EquipoRepository         equipoRepository;
-    private final GrupoRepository          grupoRepository;
-    private final TablaPosicionService     tablaPosicionService;
+    private final PartidoRepository       partidoRepository;
+    private final EdicionTorneoRepository edicionRepository;
+    private final CategoriaRepository     categoriaRepository;
+    private final SedeRepository          sedeRepository;
+    private final EquipoRepository        equipoRepository;
+    private final GrupoRepository         grupoRepository;
+    private final TablaPosicionService    tablaPosicionService;
+    private final PagoService             pagoService;
 
-    // ── Creación ─────────────────────────────────────────────────────────────
+    // ── Creación ──────────────────────────────────────────────────────────────
 
     @Override
     public PartidoResponse crear(PartidoRequest request) {
@@ -47,7 +49,6 @@ public class PartidoServiceImpl implements PartidoService {
 
         FasePartido fase = request.getFase() != null ? request.getFase() : FasePartido.GRUPOS;
         Grupo grupo = null;
-
         if (FasePartido.GRUPOS.equals(fase)) {
             if (request.getGrupoId() == null)
                 throw new BadRequestException("grupoId es obligatorio para partidos de fase GRUPOS");
@@ -104,6 +105,20 @@ public class PartidoServiceImpl implements PartidoService {
                 .stream().map(this::toResponse).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<PartidoResponse> historialPorEquipoYEdicion(Long equipoId, Long edicionId) {
+        return partidoRepository.findHistorialPorEquipoYEdicion(equipoId, edicionId)
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PartidoResponse> historialCompleto(Long equipoId) {
+        return partidoRepository.findHistorialCompleto(equipoId)
+                .stream().map(this::toResponse).toList();
+    }
+
     // ── Cambios de estado ─────────────────────────────────────────────────────
 
     @Override
@@ -131,12 +146,10 @@ public class PartidoServiceImpl implements PartidoService {
     @Override
     public PartidoResponse registrarResultado(Long id, Integer golesLocal, Integer golesVisitante) {
         Partido partido = findById(id);
-
         if (!EstadoPartido.EN_JUEGO.equals(partido.getEstado()))
             throw new BadRequestException(
                     "El partido debe estar EN_JUEGO para registrar resultado. Estado actual: "
                             + partido.getEstado());
-
         if (golesLocal < 0 || golesVisitante < 0)
             throw new BadRequestException("Los goles no pueden ser negativos");
 
@@ -146,7 +159,6 @@ public class PartidoServiceImpl implements PartidoService {
 
         Partido guardado = partidoRepository.save(partido);
         tablaPosicionService.actualizarTablaAlFinalizarPartido(guardado);
-
         return toResponse(guardado);
     }
 
@@ -154,7 +166,6 @@ public class PartidoServiceImpl implements PartidoService {
     public PartidoResponse registrarWo(Long id, Long equipoWoId) {
         Partido partido = findById(id);
 
-        // Fix QA: validar que el partido no esté ya finalizado
         if (EstadoPartido.FINALIZADO.equals(partido.getEstado())
                 || EstadoPartido.WO.equals(partido.getEstado()))
             throw new BadRequestException(
@@ -163,12 +174,11 @@ public class PartidoServiceImpl implements PartidoService {
         if (EstadoPartido.CANCELADO.equals(partido.getEstado()))
             throw new BadRequestException("No se puede aplicar WO a un partido cancelado");
 
-        boolean esLocal = partido.getEquipoLocal().getId().equals(equipoWoId);
+        boolean esLocal     = partido.getEquipoLocal().getId().equals(equipoWoId);
         boolean esVisitante = partido.getEquipoVisitante().getId().equals(equipoWoId);
 
         if (!esLocal && !esVisitante)
-            throw new BadRequestException(
-                    "El equipoWoId no pertenece a este partido");
+            throw new BadRequestException("El equipoWoId no pertenece a este partido");
 
         if (esLocal) {
             partido.setGolesLocal(0);
@@ -182,6 +192,25 @@ public class PartidoServiceImpl implements PartidoService {
         Partido guardado = partidoRepository.save(partido);
         tablaPosicionService.actualizarTablaAlFinalizarPartido(guardado);
 
+        // Generar multa S/.50 automáticamente (Art. 16a)
+        pagoService.generarMultaWo(guardado, equipoWoId);
+
+        // ── Art. 16b — verificar si el equipo acumula 2 WOs ─────────────────
+        long totalWos = partidoRepository.contarWosPorEquipoEnEdicion(
+                equipoWoId, partido.getEdicion().getId());
+
+        if (totalWos >= 2) {
+            // Eliminar automáticamente al equipo del torneo
+            Equipo equipoWo = esLocal
+                    ? partido.getEquipoLocal()
+                    : partido.getEquipoVisitante();
+            equipoWo.setActivo(false);
+            equipoRepository.save(equipoWo);
+
+            // El response incluirá que el equipo fue eliminado
+            // El organizador verá el equipo inactivo en el siguiente listado
+        }
+
         return toResponse(guardado);
     }
 
@@ -190,8 +219,7 @@ public class PartidoServiceImpl implements PartidoService {
         Partido partido = findById(id);
         if (EstadoPartido.FINALIZADO.equals(partido.getEstado())
                 || EstadoPartido.WO.equals(partido.getEstado()))
-            throw new BadRequestException(
-                    "No se puede cancelar un partido ya finalizado");
+            throw new BadRequestException("No se puede cancelar un partido ya finalizado");
         partido.setActivo(false);
         partido.setEstado(EstadoPartido.CANCELADO);
         partidoRepository.save(partido);
@@ -201,7 +229,8 @@ public class PartidoServiceImpl implements PartidoService {
 
     private Partido findById(Long id) {
         return partidoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Partido no encontrado con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Partido no encontrado con id: " + id));
     }
 
     private EquipoResponse toEquipoResponse(Equipo e) {
@@ -251,6 +280,8 @@ public class PartidoServiceImpl implements PartidoService {
                 .golesVisitante(p.getGolesVisitante())
                 .estado(p.getEstado()).fase(p.getFase())
                 .grupoId(p.getGrupo() != null ? p.getGrupo().getId() : null)
+                .cancha(p.getCancha())
+                .fixtureId(p.getFixture() != null ? p.getFixture().getId() : null)
                 .activo(p.getActivo())
                 .build();
     }

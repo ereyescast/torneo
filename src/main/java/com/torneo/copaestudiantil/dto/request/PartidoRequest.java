@@ -32,14 +32,12 @@ public class PartidoRequest {
     private LocalDateTime fechaHora;
 
     private EstadoPartido estado;
-
-    /**
-     * Fase del torneo. Default: GRUPOS si no se envía.
-     */
     private FasePartido fase;
-
-    /**
-     * Obligatorio cuando fase = GRUPOS. Null en fases eliminatorias.
-     */
     private Long grupoId;
+
+    /** Cancha donde se juega. Ej: "Campo 1", "Campo 7" */
+    private String cancha;
+
+    /** Fixture al que pertenece. Null si es partido manual. */
+    private Long fixtureId;
 }

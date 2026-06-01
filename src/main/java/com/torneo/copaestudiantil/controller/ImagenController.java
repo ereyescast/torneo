@@ -3,6 +3,9 @@ package com.torneo.copaestudiantil.controller;
 import com.torneo.copaestudiantil.entity.Tecnico;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.TecnicoRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -15,6 +18,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+@Tag(name = "15. Imágenes", description = "Descarga de fotos de jugadores y técnicos")
 @RestController
 @RequestMapping("/api/imagenes")
 @RequiredArgsConstructor
@@ -25,8 +29,14 @@ public class ImagenController {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
+    @Operation(
+            summary = "Obtener foto de técnico",
+            description = "Retorna la imagen del técnico en formato binario (JPG o PNG)"
+    )
     @GetMapping("/tecnicos/{id}")
-    public ResponseEntity<Resource> obtenerImagenTecnico(@PathVariable Long id) {
+    public ResponseEntity<Resource> obtenerImagenTecnico(
+            @Parameter(description = "ID del técnico") @PathVariable Long id) {
+
         Tecnico tecnico = tecnicoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
 
@@ -39,11 +49,12 @@ public class ImagenController {
             Resource resource = new UrlResource(path.toUri());
 
             if (!resource.exists())
-                throw new ResourceNotFoundException("Imagen no encontrada");
+                throw new ResourceNotFoundException("Imagen no encontrada en el servidor");
 
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
+
         } catch (MalformedURLException e) {
             throw new ResourceNotFoundException("Error al cargar la imagen");
         }

@@ -3,10 +3,12 @@ package com.torneo.copaestudiantil.dto.response;
 import com.torneo.copaestudiantil.entity.EstadoPartido;
 import com.torneo.copaestudiantil.entity.FasePartido;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PartidoResponse {
+
     private Long id;
     private Long organizadorId;
     private EdicionTorneoResponse edicion;
@@ -20,5 +22,7 @@ public class PartidoResponse {
     private EstadoPartido estado;
     private FasePartido fase;
     private Long grupoId;
+    private String cancha;      // "Campo 1", "Campo 7" — nuevo
+    private Long fixtureId;     // referencia al fixture — nuevo
     private Boolean activo;
 }

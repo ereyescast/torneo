@@ -7,73 +7,85 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "partidos")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Partido {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 🔑 Multi-organizador
     @Column(name = "organizador_id", nullable = false)
     private Long organizadorId;
 
-    // 📅 Edición
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "edicion_id", nullable = false)
     private EdicionTorneo edicion;
 
-    // 🏆 Categoría
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
-    // 🏟 Sede (aunque el equipo tenga sede fija, puede variar en finales)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sede_id", nullable = false)
     private Sede sede;
 
-    // 🏠 Equipo Local
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "equipo_local_id", nullable = false)
     private Equipo equipoLocal;
 
-    // 🛫 Equipo Visitante
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "equipo_visitante_id", nullable = false)
     private Equipo equipoVisitante;
 
-    // 📆 Fecha y hora del partido
     @Column(name = "fecha_hora", nullable = false)
     private LocalDateTime fechaHora;
 
-    // ⚽ Goles
     @Column(name = "goles_local")
     private Integer golesLocal;
 
     @Column(name = "goles_visitante")
     private Integer golesVisitante;
 
-    // 🏁 Fase del torneo (GRUPOS, SEMIFINAL_ORO, FINAL_ORO, etc.)
     @Enumerated(EnumType.STRING)
     @Column(name = "fase", nullable = false, length = 30)
     private FasePartido fase;
 
-    // 👥 Grupo al que pertenece (solo aplica cuando fase = GRUPOS; null en eliminatorias)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "grupo_id")
     private Grupo grupo;
 
-    // 🔄 Estado del partido
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private EstadoPartido estado;
 
+    /**
+     * Cancha donde se juega el partido.
+     * Ej: "Campo 1", "Campo 7", "Campo 9"
+     * Asignado automáticamente al generar el fixture.
+     * El organizador puede cambiarlo via reprogramar.
+     */
+    @Column(name = "cancha", length = 50)
+    private String cancha;
+
+    /**
+     * Fixture al que pertenece este partido.
+     * Null si el partido fue creado manualmente sin fixture.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fixture_id")
+    private Fixture fixture;
+
+    /**
+     * Flag de idempotencia — evita doble actualización de tabla.
+     * Se marca true cuando la tabla de posiciones ya fue actualizada.
+     * Si se llama actualizarTabla dos veces, la segunda es ignorada.
+     */
+    @Column(name = "tabla_actualizada", nullable = false)
+    @Builder.Default
+    private Boolean tablaActualizada = false;
+
     @Column(nullable = false)
+    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
@@ -85,12 +97,9 @@ public class Partido {
     @PrePersist
     protected void onCreate() {
         this.fechaCreacion = LocalDateTime.now();
-        if (this.estado == null) {
-            this.estado = EstadoPartido.PROGRAMADO;
-        }
-        if (this.fase == null) {
-            this.fase = FasePartido.GRUPOS;
-        }
+        if (this.estado == null) this.estado = EstadoPartido.PROGRAMADO;
+        if (this.fase == null) this.fase = FasePartido.GRUPOS;
+        if (this.tablaActualizada == null) this.tablaActualizada = false;
     }
 
     @PreUpdate

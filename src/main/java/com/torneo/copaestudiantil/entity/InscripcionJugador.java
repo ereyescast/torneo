@@ -3,23 +3,17 @@ package com.torneo.copaestudiantil.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
         name = "inscripciones_jugadores",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {
-                        "jugador_id",
-                        "edicion_id"
-                })
+                @UniqueConstraint(columnNames = {"jugador_id", "edicion_id"})
         }
 )
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class InscripcionJugador {
 
     @Id
@@ -42,6 +36,7 @@ public class InscripcionJugador {
     private EdicionTorneo edicion;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "fecha_inscripcion", nullable = false, updatable = false)
