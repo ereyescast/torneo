@@ -1,7 +1,6 @@
 package com.torneo.copaestudiantil.security;
 
 import com.torneo.copaestudiantil.common.trace.TraceContext;
-import com.torneo.copaestudiantil.entity.Usuario;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -61,11 +60,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                    // Guardar el ID del usuario autenticado en TraceContext
-                    // para que CursorUtil pueda validar el orgId del cursor
-                    if (userDetails instanceof Usuario usuario) {
-                        TraceContext.setOrganizadorId(usuario.getId());
-                    }
+                    // CORRECCIÓN MULTI-TENANCY:
+                    // Se guarda el organizadorId REAL extraído del token,
+                    // NO el id del usuario (ese era el bug anterior).
+                    Long organizadorId = jwtUtil.extraerOrganizadorId(token);
+                    TraceContext.setOrganizadorId(organizadorId);
                 }
             } catch (UsernameNotFoundException e) {
                 // Token válido pero usuario ya no existe — continuar sin autenticar

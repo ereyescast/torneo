@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "04. Categorías", description = "Categorías por año de nacimiento y modalidad (F7, F8, F9)")
 @RestController
-@RequestMapping("/api/categorias")
+@RequestMapping("/api/admin/categorias")
 @RequiredArgsConstructor
 public class CategoriaController {
 

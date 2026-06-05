@@ -12,7 +12,6 @@ public class SedeSpecification {
                 .where(conActiva(req.getActiva()))
                 .and(conNombre(req.getNombre()))
                 .and(conDireccion(req.getDireccion()))
-                .and(conOrganizador(req.getOrganizadorId()))
                 .and(desdeCursor(req.getPagination() != null
                         ? req.getPagination().getNextCursor() : null));
     }
@@ -26,20 +25,14 @@ public class SedeSpecification {
         return (root, query, cb) ->
                 nombre == null || nombre.isBlank() ? null
                         : cb.like(cb.lower(root.get("nombre")),
-                        nombre.toLowerCase().trim() + "%");
+                        "%" + nombre.toLowerCase().trim() + "%");
     }
 
     public static Specification<Sede> conDireccion(String direccion) {
         return (root, query, cb) ->
                 direccion == null || direccion.isBlank() ? null
                         : cb.like(cb.lower(root.get("direccion")),
-                        direccion.toLowerCase().trim() + "%");
-    }
-
-    public static Specification<Sede> conOrganizador(Long organizadorId) {
-        return (root, query, cb) ->
-                organizadorId == null ? null
-                        : cb.equal(root.get("organizadorId"), organizadorId);
+                        "%" + direccion.toLowerCase().trim() + "%");
     }
 
     public static Specification<Sede> desdeCursor(String cursor) {

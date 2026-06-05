@@ -28,42 +28,34 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
                 .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-
-                        // ── Públicos ─────────────────────────────────────────────
+                        // ── Autenticación (login/register) ──
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // ── Documentación y consola ──
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
 
-                        // ── Lectura pública (consultas del torneo) ───────────────
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/ediciones/**",
-                                "/api/categorias/**",
-                                "/api/equipos/**",
-                                "/api/grupos/**",
-                                "/api/partidos/**",
-                                "/api/tabla-posiciones/**",
-                                "/api/estadisticas/**",
-                                "/api/jugadores/**",
-                                "/api/arbitros/**",
-                                "/api/tecnicos/**",
-                                "/api/imagenes/**"
-                        ).permitAll()
+                        // ── VISTA PÚBLICA (padres/público, sin login) ──
+                        // Todo bajo /api/public/** es de solo lectura y abierto.
+                        .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
 
-                        // ── Escritura solo para autenticados ─────────────────────
+                        // ── PANEL ADMIN (organizador, requiere token) ──
+                        // Todo bajo /api/admin/** exige autenticación.
+                        // El filtro de organizador se aplica en los services.
+                        .requestMatchers("/api/admin/**").authenticated()
+
+                        // ── Cualquier otra ruta requiere autenticación ──
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                // Necesario para que H2-console funcione en dev
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()));
-
         return http.build();
     }
 

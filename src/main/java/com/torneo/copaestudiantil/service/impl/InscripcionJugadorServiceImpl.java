@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,36 +24,32 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
     private final JugadorRepository            jugadorRepository;
     private final EquipoRepository             equipoRepository;
     private final EdicionTorneoRepository      edicionRepository;
-    private final CategoriaRepository          categoriaRepository;
     private final FixtureRepository            fixtureRepository;
 
     @Override
     public InscripcionJugadorResponse inscribir(InscripcionJugadorRequest request) {
 
-        // ── Art. 22 — Validar inscripción duplicada ────────────────────────────
+        // ── Art. 22 — Validar inscripción duplicada ───────────────────────────
         if (inscripcionRepository.existsByJugadorIdAndEdicionId(
-                request.getJugadorId(), request.getEdicionId())) {
+                request.getJugadorId(), request.getEdicionId()))
             throw new BadRequestException(
                     "El jugador ya está inscrito en esta edición del torneo (Art. 22)");
-        }
 
-        Jugador jugador   = jugadorRepository.findById(request.getJugadorId())
+        Jugador jugador = jugadorRepository.findById(request.getJugadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Jugador no encontrado"));
-        Equipo equipo     = equipoRepository.findById(request.getEquipoId())
+        Equipo equipo = equipoRepository.findById(request.getEquipoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
         EdicionTorneo edicion = edicionRepository.findById(request.getEdicionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Edición no encontrada"));
 
         // ── Art. 11 — Validar fecha límite de inscripción ─────────────────────
-        // El padrón se puede enviar hasta antes del inicio del 2do tiempo de la 3ra fecha.
-        // Simplificado: hasta la fecha del partido de la 3ra fecha del fixture.
         validarFechaLimiteInscripcion(request.getEdicionId());
 
-        // ── Art. III — Validar edad por categoría ─────────────────────────────
+        // ── Art. III + Art. 22 — Validar edad por categoría ──────────────────
         validarEdadPorCategoria(jugador, equipo.getCategoria());
 
-        // ── Art. 11 — Validar cupo máximo ────────────────────────────────────
-        validarCupoMaximo(equipo, edicion);
+        // ── Art. 11 — Validar cupo máximo ─────────────────────────────────────
+        validarCupoMaximo(equipo);
 
         InscripcionJugador inscripcion = InscripcionJugador.builder()
                 .organizadorId(request.getOrganizadorId())
@@ -89,21 +84,16 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
         inscripcionRepository.save(inscripcion);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // Validaciones de reglas del torneo
-    // ────────────────────────────────────────────────────────────────────────
+    // ── Validaciones ──────────────────────────────────────────────────────────
 
     /**
-     * Art. 11 — Fecha límite de inscripción:
-     * "Tienen hasta la 3ra fecha (antes de empezar el 2do tiempo) para enviar el padrón."
-     *
-     * Implementación: busca el fixture de la fecha 3 de la edición.
-     * Si ya pasó esa fecha, no se permiten más inscripciones.
-     * Si no hay fixtures configurados, permite la inscripción (torneo en configuración).
+     * Art. 11 — Fecha límite de inscripción.
+     * "Tienen hasta la 3ra fecha para enviar el padrón."
+     * Si no hay fixtures configurados, permite la inscripción.
      */
     private void validarFechaLimiteInscripcion(Long edicionId) {
         List<Fixture> fixtures = fixtureRepository.findByEdicionId(edicionId);
-        if (fixtures.isEmpty()) return; // Sin fixtures = torneo en configuración, permitir
+        if (fixtures.isEmpty()) return;
 
         Optional<Fixture> fechaTres = fixtures.stream()
                 .filter(f -> f.getNumeroFecha() != null && f.getNumeroFecha() == 3)
@@ -111,39 +101,62 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
 
         if (fechaTres.isPresent()) {
             LocalDate fechaLimite = fechaTres.get().getFechaTorneo();
-            if (LocalDate.now().isAfter(fechaLimite)) {
+            if (LocalDate.now().isAfter(fechaLimite))
                 throw new BadRequestException(String.format(
-                        "No se pueden agregar más jugadores. La fecha límite de inscripción "
-                                + "fue el %s (3ra fecha del torneo — Art. 11). "
-                                + "Contacta al organizador para casos excepcionales.",
+                        "La fecha límite de inscripción fue el %s (3ra fecha — Art. 11). "
+                                + "No se pueden agregar más jugadores.",
                         fechaLimite));
-            }
         }
     }
 
     /**
-     * Art. III — Categorías:
-     * FUTBOL 7: 2018-2019
-     * FUTBOL 8: 2017
-     * FUTBOL 9: 2014-2015-2016
+     * Art. III + Art. 22 — Validación de edad por categoría.
+     *
+     * Regla base (todos los jugadores):
+     *   El jugador debe ser igual o más joven que el año de la categoría.
+     *   ✅ Nacido 2019 en categoría 2018 → más joven, sin ventaja física
+     *   ✅ Nacido 2018 en categoría 2018 → año exacto
+     *   ❌ Nacido 2017 en categoría 2018 → mayor, tiene ventaja física
+     *
+     * Excepción Art. 22 (solo niñas en competitivo):
+     *   Una niña puede jugar exactamente 1 año por encima de su categoría.
+     *   ✅ Niña nacida 2017 en categoría F7 (2018) → excepción Art. 22
+     *   ❌ Niño nacido 2017 en categoría F7 (2018) → no aplica la excepción
      */
     private void validarEdadPorCategoria(Jugador jugador, Categoria categoria) {
-        int anioNac      = jugador.getFechaNacimiento().getYear();
+        int anioNac       = jugador.getFechaNacimiento().getYear();
         int anioCategoria = categoria.getAnioNacimiento();
 
-        if (anioNac != anioCategoria) {
+        // Regla base: igual o más joven
+        if (anioNac >= anioCategoria) return;
+
+        // Verificar excepción Art. 22 — niña en competitivo
+        boolean esNina       = Genero.FEMENINO.equals(jugador.getGenero());
+        boolean esCompetitivo = NivelCompetencia.COMPETITIVO.equals(categoria.getNivel());
+
+        if (esNina && esCompetitivo && anioNac == anioCategoria - 1) return;
+
+        // No cumple ninguna regla
+        if (esNina && esCompetitivo) {
             throw new BadRequestException(String.format(
-                    "El jugador (nacido en %d) no corresponde a la categoría %s %d (Art. III)",
-                    anioNac, categoria.getModalidad(), anioCategoria));
+                    "La jugadora (nacida en %d) no puede jugar en la categoría %s %d. "
+                            + "La excepción del Art. 22 permite jugar máximo 1 año por encima "
+                            + "(año %d como mínimo).",
+                    anioNac, categoria.getModalidad(), anioCategoria, anioCategoria - 1));
         }
+
+        throw new BadRequestException(String.format(
+                "El jugador (nacido en %d) no puede jugar en la categoría %s %d. "
+                        + "Solo pueden inscribirse jugadores nacidos en %d o años posteriores "
+                        + "(Art. III).",
+                anioNac, categoria.getModalidad(), anioCategoria, anioCategoria));
     }
 
     /**
-     * Art. 11 — Cupo máximo por equipo:
-     * FUTBOL 7 / F8: 18 jugadores
-     * FUTBOL 9:      20 jugadores
+     * Art. 11 — Cupo máximo por equipo.
+     * F7 y F8: 18 jugadores. F9 y F11: 20 jugadores.
      */
-    private void validarCupoMaximo(Equipo equipo, EdicionTorneo edicion) {
+    private void validarCupoMaximo(Equipo equipo) {
         Categoria categoria = equipo.getCategoria();
 
         int maxPermitido;
@@ -159,14 +172,13 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
         long inscritos = inscripcionRepository.findByEquipoId(equipo.getId())
                 .stream().filter(InscripcionJugador::getActivo).count();
 
-        if (inscritos >= maxPermitido) {
+        if (inscritos >= maxPermitido)
             throw new BadRequestException(String.format(
                     "El equipo ya tiene %d jugadores inscritos. Máximo permitido: %d (Art. 11)",
                     inscritos, maxPermitido));
-        }
     }
 
-    // ── Mapeo a DTO ──────────────────────────────────────────────────────────
+    // ── Mapeo ─────────────────────────────────────────────────────────────────
 
     private InscripcionJugadorResponse toResponse(InscripcionJugador i) {
         return InscripcionJugadorResponse.builder()

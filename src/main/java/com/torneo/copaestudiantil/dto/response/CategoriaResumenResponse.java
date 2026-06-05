@@ -1,18 +1,15 @@
-package com.torneo.copaestudiantil.dto.request.search;
+package com.torneo.copaestudiantil.dto.response;
 
 import com.torneo.copaestudiantil.entity.ModalidadJuego;
 import com.torneo.copaestudiantil.entity.NivelCompetencia;
 import lombok.*;
 
-/**
- * organizadorId YA NO viene del body — el service fuerza el filtro por el token.
- */
+/** Vista ligera de categoría para la capa pública y para anidar. */
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class CategoriaSearchRequest {
-    private Boolean activa;
-    private Long edicionId;
+public class CategoriaResumenResponse {
+    private Long id;
     private Integer anioNacimiento;
     private NivelCompetencia nivel;
     private ModalidadJuego modalidad;
-    private CursorRequest pagination = new CursorRequest();
+    private Boolean activa;
 }

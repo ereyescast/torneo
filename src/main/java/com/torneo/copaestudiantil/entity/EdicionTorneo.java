@@ -9,7 +9,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "ediciones")
+@Table(
+        name = "ediciones",
+        uniqueConstraints = {
+                // Una edición es única por organizador + nombre + fecha de inicio.
+                // Permite: "Copa Kids" 2025 y "Copa Kids" 2026 (distinta fecha)
+                // Permite: "Copa Kids" y "Copa Kids 3era" misma fecha (distinto nombre)
+                // Bloquea: duplicado exacto accidental (doble/triple clic)
+                @UniqueConstraint(
+                        name = "uk_edicion_organizador_nombre_fecha",
+                        columnNames = {"organizador_id", "nombre", "fecha_inicio"})
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,6 +45,7 @@ public class EdicionTorneo {
     private LocalDate fechaFin;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean activa = true;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
@@ -43,6 +55,7 @@ public class EdicionTorneo {
     private LocalDateTime fechaActualizacion;
 
     @OneToMany(mappedBy = "edicion")
+    @Builder.Default
     private List<TecnicoEquipoEdicion> asignacionesTecnicos = new ArrayList<>();
 
     @PrePersist

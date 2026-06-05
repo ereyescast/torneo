@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "05. Equipos", description = "Equipos inscritos en el torneo")
 @RestController
-@RequestMapping("/api/equipos")
+@RequestMapping("/api/admin/equipos")
 @RequiredArgsConstructor
 public class EquipoController {
 

@@ -12,7 +12,9 @@ import java.util.Optional;
 public interface JugadorRepository extends JpaRepository<Jugador, Long>,
         JpaSpecificationExecutor<Jugador> {
 
-    Optional<Jugador> findByNumeroDocumento(String numeroDocumento);
-    boolean existsByNumeroDocumento(String numeroDocumento);
+    // Documento único POR ORGANIZADOR
+    Optional<Jugador> findByNumeroDocumentoAndOrganizadorId(String numeroDocumento, Long organizadorId);
+    boolean existsByNumeroDocumentoAndOrganizadorId(String numeroDocumento, Long organizadorId);
+
     List<Jugador> findByActivo(Boolean activo);
 }

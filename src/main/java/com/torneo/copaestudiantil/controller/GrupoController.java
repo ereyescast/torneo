@@ -20,7 +20,7 @@ import java.util.List;
 
 @Tag(name = "10. Grupos", description = "Grupos de la fase de grupos del torneo")
 @RestController
-@RequestMapping("/api/grupos")
+@RequestMapping("/api/admin/grupos")
 @RequiredArgsConstructor
 public class GrupoController {
 

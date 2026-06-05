@@ -33,6 +33,16 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 20)
     private RolUsuario rol;
 
+    /**
+     * Organizador al que pertenece este usuario (multi-tenancy).
+     * Todo lo que el usuario crea/ve se filtra por este organizadorId.
+     *
+     * Puede ser null SOLO para usuarios ADMIN (super administradores
+     * de la plataforma que no pertenecen a un organizador específico).
+     */
+    @Column(name = "organizador_id")
+    private Long organizadorId;
+
     @Column(nullable = false)
     private Boolean activo = true;
 

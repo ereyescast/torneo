@@ -2,6 +2,7 @@ package com.torneo.copaestudiantil.service.impl;
 
 import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.common.response.CursorUtil;
+import com.torneo.copaestudiantil.common.util.SecurityUtils;
 import com.torneo.copaestudiantil.dto.request.JugadorRequest;
 import com.torneo.copaestudiantil.dto.request.search.CursorRequest;
 import com.torneo.copaestudiantil.dto.request.search.JugadorSearchRequest;
@@ -37,46 +38,39 @@ public class JugadorServiceImpl implements JugadorService {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
-    // ── Search con cursor enriquecido ────────────────────────────────────────
-
     @Override
     @Transactional(readOnly = true)
     public CursorData<JugadorResponse> search(JugadorSearchRequest request) {
         if (request == null) request = new JugadorSearchRequest();
-
         CursorRequest pagination = request.getPagination() != null
                 ? request.getPagination() : new CursorRequest();
-
         int limit        = pagination.getLimit();
         String sortBy    = pagination.getSortBy() != null ? pagination.getSortBy() : "id";
-        String direction = pagination.getDirection();
-        Sort.Direction dir = "DESC".equalsIgnoreCase(direction)
+        Sort.Direction dir = "DESC".equalsIgnoreCase(pagination.getDirection())
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        // Construir Specification con todos los filtros
-        Specification<Jugador> spec = JugadorSpecification.fromRequest(request);
+        Long organizadorId = SecurityUtils.getOrganizadorIdActual();
+        Specification<Jugador> spec = JugadorSpecification.fromRequest(request)
+                .and((root, query, cb) -> cb.equal(root.get("organizadorId"), organizadorId));
 
-        // Traer limit+1 para detectar si hay siguiente página
         List<Jugador> results = jugadorRepository.findAll(spec, Sort.by(dir, sortBy));
         List<Jugador> paginados = results.stream().limit(limit + 1L).toList();
-
-        // Mapear a response
-        List<JugadorResponse> responses = paginados.stream()
-                .map(this::toResponse).toList();
-
-        // Construir CursorData con cursor enriquecido
+        List<JugadorResponse> responses = paginados.stream().map(this::toResponse).toList();
         return CursorUtil.build(responses, limit, sortBy, pagination.getPreviousCursor());
     }
 
-    // ── CRUD ─────────────────────────────────────────────────────────────────
-
     @Override
     public JugadorResponse crear(JugadorRequest request) {
-        if (jugadorRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
+        Long organizadorId = SecurityUtils.getOrganizadorIdActual();
+
+        if (jugadorRepository.existsByNumeroDocumentoAndOrganizadorId(
+                request.getNumeroDocumento(), organizadorId)) {
             throw new BadRequestException("Ya existe un jugador con el documento: "
                     + request.getNumeroDocumento());
         }
+
         Jugador jugador = Jugador.builder()
+                .organizadorId(organizadorId)
                 .nombres(request.getNombres())
                 .apellidoPaterno(request.getApellidoPaterno())
                 .apellidoMaterno(request.getApellidoMaterno())
@@ -84,6 +78,7 @@ public class JugadorServiceImpl implements JugadorService {
                 .numeroDocumento(request.getNumeroDocumento())
                 .fechaNacimiento(request.getFechaNacimiento())
                 .nacionalidad(request.getNacionalidad())
+                .genero(request.getGenero())
                 .activo(true)
                 .build();
         return toResponse(jugadorRepository.save(jugador));
@@ -92,13 +87,16 @@ public class JugadorServiceImpl implements JugadorService {
     @Override
     @Transactional(readOnly = true)
     public JugadorResponse obtenerPorId(Long id) {
-        return toResponse(findById(id));
+        Jugador jugador = findById(id);
+        SecurityUtils.validarPertenencia(jugador.getOrganizadorId());
+        return toResponse(jugador);
     }
 
     @Override
     @Transactional(readOnly = true)
     public JugadorResponse obtenerPorDocumento(String numeroDocumento) {
-        return jugadorRepository.findByNumeroDocumento(numeroDocumento)
+        Long organizadorId = SecurityUtils.getOrganizadorIdActual();
+        return jugadorRepository.findByNumeroDocumentoAndOrganizadorId(numeroDocumento, organizadorId)
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Jugador no encontrado con documento: " + numeroDocumento));
@@ -107,11 +105,16 @@ public class JugadorServiceImpl implements JugadorService {
     @Override
     public JugadorResponse actualizar(Long id, JugadorRequest request) {
         Jugador jugador = findById(id);
+        SecurityUtils.validarPertenencia(jugador.getOrganizadorId());
+        Long organizadorId = jugador.getOrganizadorId();
+
         if (!jugador.getNumeroDocumento().equals(request.getNumeroDocumento())
-                && jugadorRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
+                && jugadorRepository.existsByNumeroDocumentoAndOrganizadorId(
+                        request.getNumeroDocumento(), organizadorId)) {
             throw new BadRequestException("Ya existe un jugador con el documento: "
                     + request.getNumeroDocumento());
         }
+
         jugador.setNombres(request.getNombres());
         jugador.setApellidoPaterno(request.getApellidoPaterno());
         jugador.setApellidoMaterno(request.getApellidoMaterno());
@@ -119,14 +122,15 @@ public class JugadorServiceImpl implements JugadorService {
         jugador.setNumeroDocumento(request.getNumeroDocumento());
         jugador.setFechaNacimiento(request.getFechaNacimiento());
         jugador.setNacionalidad(request.getNacionalidad());
-        jugador.setActivo(request.getActivo() != null
-                ? request.getActivo() : jugador.getActivo());
+        if (request.getGenero() != null) jugador.setGenero(request.getGenero());
+        jugador.setActivo(request.getActivo() != null ? request.getActivo() : jugador.getActivo());
         return toResponse(jugadorRepository.save(jugador));
     }
 
     @Override
     public void desactivar(Long id) {
         Jugador jugador = findById(id);
+        SecurityUtils.validarPertenencia(jugador.getOrganizadorId());
         jugador.setActivo(false);
         jugadorRepository.save(jugador);
     }
@@ -134,19 +138,19 @@ public class JugadorServiceImpl implements JugadorService {
     @Override
     public JugadorResponse subirImagen(Long id, MultipartFile file) {
         Jugador jugador = findById(id);
+        SecurityUtils.validarPertenencia(jugador.getOrganizadorId());
+
         if (!Boolean.TRUE.equals(jugador.getActivo()))
             throw new BadRequestException("No se puede subir imagen a un jugador inactivo");
         if (file.isEmpty())
             throw new BadRequestException("El archivo está vacío");
         if (file.getSize() > 5 * 1024 * 1024)
             throw new BadRequestException("La imagen no debe superar los 5MB");
-
         String contentType = file.getContentType();
         if (contentType == null ||
                 !(contentType.equalsIgnoreCase("image/jpeg")
                         || contentType.equalsIgnoreCase("image/png")))
             throw new BadRequestException("Solo se permiten imágenes JPG o PNG");
-
         try {
             String dir = uploadDir + "/jugadores/";
             Files.createDirectories(Paths.get(dir));
@@ -160,8 +164,6 @@ public class JugadorServiceImpl implements JugadorService {
             throw new BadRequestException("Error al guardar la imagen");
         }
     }
-
-    // ── Privados ─────────────────────────────────────────────────────────────
 
     private Jugador findById(Long id) {
         return jugadorRepository.findById(id)

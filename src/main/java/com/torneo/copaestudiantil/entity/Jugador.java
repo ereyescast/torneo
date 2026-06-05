@@ -10,19 +10,22 @@ import java.time.LocalDateTime;
 @Table(
         name = "jugadores",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = "numero_documento")
-        }
-)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+                // Documento único POR ORGANIZADOR (no global).
+                // Así Juanje puede registrar a un jugador aunque Miguel ya lo tenga.
+                @UniqueConstraint(
+                        name = "uk_jugador_organizador_documento",
+                        columnNames = {"organizador_id", "numero_documento"})
+        })
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Jugador {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** Multi-tenancy: cada organizador tiene su propia lista de jugadores. */
+    @Column(name = "organizador_id", nullable = false)
+    private Long organizadorId;
 
     @Column(nullable = false, length = 100)
     private String nombres;
@@ -37,7 +40,7 @@ public class Jugador {
     @Column(name = "tipo_documento", nullable = false, length = 30)
     private TipoDocumento tipoDocumento;
 
-    @Column(name = "numero_documento", nullable = false, length = 50, unique = true)
+    @Column(name = "numero_documento", nullable = false, length = 50)
     private String numeroDocumento;
 
     @Column(name = "fecha_nacimiento", nullable = false)
@@ -46,10 +49,20 @@ public class Jugador {
     @Column(length = 50)
     private String nacionalidad;
 
+    /**
+     * Género del jugador — opcional.
+     * ART. 22: las niñas en fútbol femenino competitivo
+     * pueden jugar una categoría arriba.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 15)
+    private Genero genero;
+
     @Column(name = "profile_image", length = 300)
     private String profileImage;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "13. Fixture", description = "Gestión del fixture semanal del torneo")
 @RestController
-@RequestMapping("/api/fixtures")
+@RequestMapping("/api/admin/fixtures")
 @RequiredArgsConstructor
 public class FixturePdfController {
 

@@ -7,6 +7,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface TecnicoRepository
         extends JpaRepository<Tecnico, Long>,
         JpaSpecificationExecutor<Tecnico> {
-
-     boolean existsByNumeroDocumento(String numeroDocumento);
+    boolean existsByNumeroDocumentoAndOrganizadorId(String numeroDocumento, Long organizadorId);
 }

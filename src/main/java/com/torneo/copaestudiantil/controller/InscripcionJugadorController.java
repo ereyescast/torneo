@@ -17,7 +17,7 @@ import java.util.List;
 
 @Tag(name = "09. Inscripciones", description = "Inscripción de jugadores a equipos por edición")
 @RestController
-@RequestMapping("/api/inscripciones")
+@RequestMapping("/api/admin/inscripciones")
 @RequiredArgsConstructor
 public class InscripcionJugadorController {
 

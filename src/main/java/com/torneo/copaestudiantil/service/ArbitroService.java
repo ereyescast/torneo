@@ -7,8 +7,8 @@ import com.torneo.copaestudiantil.dto.response.ArbitroResponse;
 
 public interface ArbitroService {
     CursorData<ArbitroResponse> search(ArbitroSearchRequest request);
-    ArbitroResponse crear(Long organizadorId, ArbitroRequest request);
+    ArbitroResponse crear(ArbitroRequest request);
     ArbitroResponse obtenerPorId(Long id);
-    ArbitroResponse actualizar(Long organizadorId, Long arbitroId, ArbitroRequest request);
-    void desactivar(Long organizadorId, Long arbitroId);
+    ArbitroResponse actualizar(Long arbitroId, ArbitroRequest request);
+    void desactivar(Long arbitroId);
 }

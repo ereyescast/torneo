@@ -15,7 +15,6 @@ public class ArbitroSpecification {
                 .where(conActivo(req.getActivo()))
                 .and(conNombre(req.getNombre()))
                 .and(conEmail(req.getEmail()))
-                .and(conOrganizador(req.getOrganizadorId()))
                 .and(desdeCursor(cursor));
     }
 
@@ -29,7 +28,7 @@ public class ArbitroSpecification {
         return (root, query, cb) ->
                 nombre == null || nombre.isBlank() ? null
                         : cb.like(cb.lower(root.get("nombre")),
-                        nombre.toLowerCase().trim() + "%");
+                        "%" + nombre.toLowerCase().trim() + "%");
     }
 
     /** EXACTO — el email es único. */
@@ -38,12 +37,6 @@ public class ArbitroSpecification {
                 email == null || email.isBlank() ? null
                         : cb.equal(cb.lower(root.get("email")),
                         email.toLowerCase().trim());
-    }
-
-    public static Specification<Arbitro> conOrganizador(Long organizadorId) {
-        return (root, query, cb) ->
-                organizadorId == null ? null
-                        : cb.equal(root.get("organizadorId"), organizadorId);
     }
 
     public static Specification<Arbitro> desdeCursor(String cursor) {

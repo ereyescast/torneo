@@ -17,7 +17,7 @@ import java.util.List;
 
 @Tag(name = "17. Pagos", description = "Control manual de pagos: inscripción, arbitraje y multas")
 @RestController
-@RequestMapping("/api/pagos")
+@RequestMapping("/api/admin/pagos")
 @RequiredArgsConstructor
 public class PagoController {
 

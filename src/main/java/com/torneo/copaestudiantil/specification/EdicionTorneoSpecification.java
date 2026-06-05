@@ -16,7 +16,6 @@ public class EdicionTorneoSpecification {
         return Specification
                 .where(conActiva(req.getActiva()))
                 .and(conNombre(req.getNombre()))
-                .and(conOrganizador(req.getOrganizadorId()))
                 .and(conFechaInicioDesdE(req.getFechaInicioDesdE()))
                 .and(conFechaInicioHasta(req.getFechaInicioHasta()))
                 .and(desdeCursor(cursor));
@@ -32,13 +31,7 @@ public class EdicionTorneoSpecification {
         return (root, query, cb) ->
                 nombre == null || nombre.isBlank() ? null
                         : cb.like(cb.lower(root.get("nombre")),
-                        nombre.toLowerCase().trim() + "%");
-    }
-
-    public static Specification<EdicionTorneo> conOrganizador(Long organizadorId) {
-        return (root, query, cb) ->
-                organizadorId == null ? null
-                        : cb.equal(root.get("organizadorId"), organizadorId);
+                        "%" + nombre.toLowerCase().trim() + "%");
     }
 
     public static Specification<EdicionTorneo> conFechaInicioDesdE(LocalDate desde) {

@@ -23,7 +23,7 @@ import java.util.List;
 
 @Tag(name = "11. Partidos", description = "Gestión y control de partidos del torneo")
 @RestController
-@RequestMapping("/api/partidos")
+@RequestMapping("/api/admin/partidos")
 @RequiredArgsConstructor
 public class PartidoController {
 

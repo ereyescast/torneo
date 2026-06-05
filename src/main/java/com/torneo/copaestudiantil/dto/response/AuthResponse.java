@@ -11,4 +11,10 @@ public class AuthResponse {
     private String nombre;
     private String email;
     private RolUsuario rol;
+
+    private Long organizadorId;
+    private String nombreOrganizador;
+
+    /** Slug para las URLs públicas. El front lo usa para armar el link a compartir. */
+    private String codigoPublico;
 }

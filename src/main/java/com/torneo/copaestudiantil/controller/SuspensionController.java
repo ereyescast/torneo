@@ -14,7 +14,7 @@ import java.util.List;
 
 @Tag(name = "16. Suspensiones", description = "Control de jugadores suspendidos por tarjeta roja (Art. 23)")
 @RestController
-@RequestMapping("/api/suspensiones")
+@RequestMapping("/api/admin/suspensiones")
 @RequiredArgsConstructor
 public class SuspensionController {
 

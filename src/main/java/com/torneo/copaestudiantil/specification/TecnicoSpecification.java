@@ -36,7 +36,7 @@ public class TecnicoSpecification {
         return (root, query, cb) ->
                 nombres == null || nombres.isBlank() ? null
                         : cb.like(cb.lower(root.get("nombres")),
-                        nombres.toLowerCase().trim() + "%");
+                        "%" + nombres.toLowerCase().trim() + "%");
     }
 
     /** PREFIJO — usa índice. */
@@ -44,7 +44,7 @@ public class TecnicoSpecification {
         return (root, query, cb) ->
                 apellido == null || apellido.isBlank() ? null
                         : cb.like(cb.lower(root.get("apellidosPaterno")),
-                        apellido.toLowerCase().trim() + "%");
+                        "%" + apellido.toLowerCase().trim() + "%");
     }
 
     public static Specification<Tecnico> conTipoDocumento(TipoDocumento tipo) {

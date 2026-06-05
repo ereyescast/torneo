@@ -11,7 +11,6 @@ public class EquipoSpecification {
         return Specification
                 .where(conActivo(req.getActivo()))
                 .and(conNombre(req.getNombre()))
-                .and(conOrganizador(req.getOrganizadorId()))
                 .and(conEdicion(req.getEdicionId()))
                 .and(conCategoria(req.getCategoriaId()))
                 .and(conSede(req.getSedeId()))
@@ -28,13 +27,7 @@ public class EquipoSpecification {
         return (root, query, cb) ->
                 nombre == null || nombre.isBlank() ? null
                         : cb.like(cb.lower(root.get("nombre")),
-                        nombre.toLowerCase().trim() + "%");
-    }
-
-    public static Specification<Equipo> conOrganizador(Long organizadorId) {
-        return (root, query, cb) ->
-                organizadorId == null ? null
-                        : cb.equal(root.get("organizadorId"), organizadorId);
+                        "%" + nombre.toLowerCase().trim() + "%");
     }
 
     public static Specification<Equipo> conEdicion(Long edicionId) {

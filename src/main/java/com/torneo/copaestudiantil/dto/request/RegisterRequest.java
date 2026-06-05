@@ -1,9 +1,7 @@
 package com.torneo.copaestudiantil.dto.request;
 
-import com.torneo.copaestudiantil.entity.RolUsuario;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -21,6 +19,11 @@ public class RegisterRequest {
     @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     private String password;
 
-    @NotNull(message = "El rol es obligatorio")
-    private RolUsuario rol;
+    /**
+     * Nombre del organizador/torneo que este usuario va a gestionar.
+     * Ej: "Bundesliga Kids Perú", "Copa Estudiantil Callao".
+     * Al registrarse, el sistema crea el organizador y vincula el usuario.
+     */
+    @NotBlank(message = "El nombre del organizador es obligatorio")
+    private String nombreOrganizador;
 }

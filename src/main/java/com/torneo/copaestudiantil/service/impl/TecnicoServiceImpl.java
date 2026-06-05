@@ -2,6 +2,7 @@ package com.torneo.copaestudiantil.service.impl;
 
 import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.common.response.CursorUtil;
+import com.torneo.copaestudiantil.common.util.SecurityUtils;
 import com.torneo.copaestudiantil.dto.request.TecnicoRequest;
 import com.torneo.copaestudiantil.dto.request.search.CursorRequest;
 import com.torneo.copaestudiantil.dto.request.search.TecnicoSearchRequest;
@@ -36,37 +37,35 @@ public class TecnicoServiceImpl implements TecnicoService {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
-    // ── Search con cursor ────────────────────────────────────────────────────
-
     @Override
     public CursorData<TecnicoResponse> search(TecnicoSearchRequest request) {
         if (request == null) request = new TecnicoSearchRequest();
-
         CursorRequest pagination = request.getPagination() != null
                 ? request.getPagination() : new CursorRequest();
-
         int limit        = pagination.getLimit();
         String sortBy    = pagination.getSortBy() != null ? pagination.getSortBy() : "id";
         Sort.Direction dir = "DESC".equalsIgnoreCase(pagination.getDirection())
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        Specification<Tecnico> spec = TecnicoSpecification.fromRequest(request);
+        Long organizadorId = SecurityUtils.getOrganizadorIdActual();
+        Specification<Tecnico> spec = TecnicoSpecification.fromRequest(request)
+                .and((root, query, cb) -> cb.equal(root.get("organizadorId"), organizadorId));
+
         List<Tecnico> results = tecnicoRepository.findAll(spec, Sort.by(dir, sortBy));
         List<Tecnico> paginados = results.stream().limit(limit + 1L).toList();
         List<TecnicoResponse> responses = paginados.stream().map(this::toResponse).toList();
-
         return CursorUtil.build(responses, limit, sortBy, pagination.getPreviousCursor());
     }
 
-    // ── CRUD ─────────────────────────────────────────────────────────────────
-
     @Override
     public TecnicoResponse registrar(TecnicoRequest request) {
-        if (tecnicoRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
+        Long organizadorId = SecurityUtils.getOrganizadorIdActual();
+        if (tecnicoRepository.existsByNumeroDocumentoAndOrganizadorId(
+                request.getNumeroDocumento(), organizadorId)) {
             throw new BadRequestException("El número de documento ya está registrado");
         }
-
         Tecnico tecnico = Tecnico.builder()
+                .organizadorId(organizadorId)
                 .nombres(request.getNombres())
                 .apellidosPaterno(request.getApellidosPaterno())
                 .apellidosMaterno(request.getApellidosMaterno())
@@ -76,24 +75,27 @@ public class TecnicoServiceImpl implements TecnicoService {
                 .fechaNac(request.getFechaNac())
                 .activo(true)
                 .build();
-
         return toResponse(tecnicoRepository.save(tecnico));
     }
 
     @Override
     public TecnicoResponse obtenerPorId(Long id) {
-        return toResponse(findById(id));
+        Tecnico tecnico = findById(id);
+        SecurityUtils.validarPertenencia(tecnico.getOrganizadorId());
+        return toResponse(tecnico);
     }
 
     @Override
     public TecnicoResponse actualizar(Long id, TecnicoRequest request) {
         Tecnico tecnico = findById(id);
+        SecurityUtils.validarPertenencia(tecnico.getOrganizadorId());
+        Long organizadorId = tecnico.getOrganizadorId();
 
         if (!tecnico.getNumeroDocumento().equals(request.getNumeroDocumento())
-                && tecnicoRepository.existsByNumeroDocumento(request.getNumeroDocumento())) {
+                && tecnicoRepository.existsByNumeroDocumentoAndOrganizadorId(
+                        request.getNumeroDocumento(), organizadorId)) {
             throw new BadRequestException("El número de documento ya está registrado");
         }
-
         tecnico.setNombres(request.getNombres());
         tecnico.setApellidosPaterno(request.getApellidosPaterno());
         tecnico.setApellidosMaterno(request.getApellidosMaterno());
@@ -101,13 +103,13 @@ public class TecnicoServiceImpl implements TecnicoService {
         tecnico.setNumeroDocumento(request.getNumeroDocumento());
         tecnico.setNacionalidad(request.getNacionalidad());
         tecnico.setFechaNac(request.getFechaNac());
-
         return toResponse(tecnicoRepository.save(tecnico));
     }
 
     @Override
     public void eliminar(Long id) {
         Tecnico tecnico = findById(id);
+        SecurityUtils.validarPertenencia(tecnico.getOrganizadorId());
         tecnico.setActivo(false);
         tecnicoRepository.save(tecnico);
     }
@@ -115,18 +117,17 @@ public class TecnicoServiceImpl implements TecnicoService {
     @Override
     public TecnicoResponse subirImagen(Long id, MultipartFile file) {
         Tecnico tecnico = findById(id);
+        SecurityUtils.validarPertenencia(tecnico.getOrganizadorId());
 
         if (file.isEmpty())
             throw new BadRequestException("El archivo está vacío");
         if (file.getSize() > 5 * 1024 * 1024)
             throw new BadRequestException("La imagen no debe superar los 5MB");
-
         String contentType = file.getContentType();
         if (contentType == null ||
                 !(contentType.equalsIgnoreCase("image/jpeg")
                         || contentType.equalsIgnoreCase("image/png")))
             throw new BadRequestException("Formato no soportado. Use JPG o PNG.");
-
         try {
             String dir = uploadDir + "/tecnicos/";
             Files.createDirectories(Paths.get(dir));
@@ -140,8 +141,6 @@ public class TecnicoServiceImpl implements TecnicoService {
             throw new BadRequestException("Error al guardar la imagen");
         }
     }
-
-    // ── Privados ─────────────────────────────────────────────────────────────
 
     private Tecnico findById(Long id) {
         return tecnicoRepository.findById(id)

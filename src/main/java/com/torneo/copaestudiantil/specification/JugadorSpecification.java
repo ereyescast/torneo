@@ -37,7 +37,7 @@ public class JugadorSpecification {
         return (root, query, cb) ->
                 nombres == null || nombres.isBlank() ? null
                         : cb.like(cb.lower(root.get("nombres")),
-                        nombres.toLowerCase().trim() + "%");
+                        "%" + nombres.toLowerCase().trim() + "%");
     }
 
     /** PREFIJO — usa índice. Ej: "Ram" → "Ramirez", "Ramos". */
@@ -45,7 +45,7 @@ public class JugadorSpecification {
         return (root, query, cb) ->
                 apellido == null || apellido.isBlank() ? null
                         : cb.like(cb.lower(root.get("apellidoPaterno")),
-                        apellido.toLowerCase().trim() + "%");
+                        "%" + apellido.toLowerCase().trim() + "%");
     }
 
     public static Specification<Jugador> conTipoDocumento(TipoDocumento tipo) {

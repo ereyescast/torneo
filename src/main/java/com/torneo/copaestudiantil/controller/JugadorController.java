@@ -18,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "06. Jugadores", description = "Gestión de jugadores del torneo")
 @RestController
-@RequestMapping("/api/jugadores")
+@RequestMapping("/api/admin/jugadores")
 @RequiredArgsConstructor
 public class JugadorController {
 

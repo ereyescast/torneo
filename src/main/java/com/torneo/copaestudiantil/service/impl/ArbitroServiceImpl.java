@@ -2,6 +2,7 @@ package com.torneo.copaestudiantil.service.impl;
 
 import com.torneo.copaestudiantil.common.response.CursorData;
 import com.torneo.copaestudiantil.common.response.CursorUtil;
+import com.torneo.copaestudiantil.common.util.SecurityUtils;
 import com.torneo.copaestudiantil.dto.request.ArbitroRequest;
 import com.torneo.copaestudiantil.dto.request.search.ArbitroSearchRequest;
 import com.torneo.copaestudiantil.dto.request.search.CursorRequest;
@@ -32,22 +33,24 @@ public class ArbitroServiceImpl implements ArbitroService {
         if (request == null) request = new ArbitroSearchRequest();
         CursorRequest pagination = request.getPagination() != null
                 ? request.getPagination() : new CursorRequest();
-
         int limit = pagination.getLimit();
         String sortBy = pagination.getSortBy() != null ? pagination.getSortBy() : "id";
         Sort.Direction dir = "DESC".equalsIgnoreCase(pagination.getDirection())
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        Specification<Arbitro> spec = ArbitroSpecification.fromRequest(request);
+        Long organizadorId = SecurityUtils.getOrganizadorIdActual();
+        Specification<Arbitro> spec = ArbitroSpecification.fromRequest(request)
+                .and((root, query, cb) -> cb.equal(root.get("organizadorId"), organizadorId));
+
         List<Arbitro> results = arbitroRepository.findAll(spec, Sort.by(dir, sortBy));
         List<Arbitro> paginados = results.stream().limit(limit + 1L).toList();
         List<ArbitroResponse> responses = paginados.stream().map(this::toResponse).toList();
-
         return CursorUtil.build(responses, limit, sortBy, pagination.getPreviousCursor());
     }
 
     @Override
-    public ArbitroResponse crear(Long organizadorId, ArbitroRequest request) {
+    public ArbitroResponse crear(ArbitroRequest request) {
+        Long organizadorId = SecurityUtils.getOrganizadorIdActual();
         Arbitro arbitro = Arbitro.builder()
                 .organizadorId(organizadorId)
                 .nombre(request.getNombre())
@@ -61,14 +64,15 @@ public class ArbitroServiceImpl implements ArbitroService {
     @Override
     @Transactional(readOnly = true)
     public ArbitroResponse obtenerPorId(Long id) {
-        return toResponse(arbitroRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Árbitro no encontrado")));
+        Arbitro arbitro = findById(id);
+        SecurityUtils.validarPertenencia(arbitro.getOrganizadorId());
+        return toResponse(arbitro);
     }
 
     @Override
-    public ArbitroResponse actualizar(Long organizadorId, Long arbitroId, ArbitroRequest request) {
-        Arbitro arbitro = arbitroRepository.findByIdAndOrganizadorId(arbitroId, organizadorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Árbitro no encontrado"));
+    public ArbitroResponse actualizar(Long arbitroId, ArbitroRequest request) {
+        Arbitro arbitro = findById(arbitroId);
+        SecurityUtils.validarPertenencia(arbitro.getOrganizadorId());
         arbitro.setNombre(request.getNombre());
         arbitro.setTelefono(request.getTelefono());
         arbitro.setEmail(request.getEmail());
@@ -76,11 +80,16 @@ public class ArbitroServiceImpl implements ArbitroService {
     }
 
     @Override
-    public void desactivar(Long organizadorId, Long arbitroId) {
-        Arbitro arbitro = arbitroRepository.findByIdAndOrganizadorId(arbitroId, organizadorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Árbitro no encontrado"));
+    public void desactivar(Long arbitroId) {
+        Arbitro arbitro = findById(arbitroId);
+        SecurityUtils.validarPertenencia(arbitro.getOrganizadorId());
         arbitro.setActivo(false);
         arbitroRepository.save(arbitro);
+    }
+
+    private Arbitro findById(Long id) {
+        return arbitroRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Árbitro no encontrado"));
     }
 
     private ArbitroResponse toResponse(Arbitro a) {

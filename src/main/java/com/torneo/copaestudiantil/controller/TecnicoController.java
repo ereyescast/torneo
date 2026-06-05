@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "07. Técnicos", description = "Cuerpo técnico de los equipos")
 @RestController
-@RequestMapping("/api/tecnicos")
+@RequestMapping("/api/admin/tecnicos")
 @RequiredArgsConstructor
 public class TecnicoController {
 

@@ -20,7 +20,7 @@ import java.util.List;
 
 @Tag(name = "14. Estadísticas", description = "Goles, asistencias y tarjetas por jugador en cada partido")
 @RestController
-@RequestMapping("/api/estadisticas")
+@RequestMapping("/api/admin/estadisticas")
 @RequiredArgsConstructor
 public class EstadisticaJugadorController {
 

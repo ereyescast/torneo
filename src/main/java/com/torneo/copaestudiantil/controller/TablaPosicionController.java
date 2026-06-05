@@ -14,7 +14,7 @@ import java.util.List;
 
 @Tag(name = "12. Tabla de Posiciones", description = "Posiciones ordenadas por puntos, diferencia de goles y goles a favor")
 @RestController
-@RequestMapping("/api/tabla-posiciones")
+@RequestMapping("/api/admin/tabla-posiciones")
 @RequiredArgsConstructor
 public class TablaPosicionController {
 

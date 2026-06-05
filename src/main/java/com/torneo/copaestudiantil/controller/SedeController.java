@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "02. Sedes", description = "Campos deportivos donde se juegan los partidos")
 @RestController
-@RequestMapping("/api/sedes")
+@RequestMapping("/api/admin/sedes")
 @RequiredArgsConstructor
 public class SedeController {
 

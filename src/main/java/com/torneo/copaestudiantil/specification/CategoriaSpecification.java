@@ -15,7 +15,6 @@ public class CategoriaSpecification {
 
         return Specification
                 .where(conActiva(req.getActiva()))
-                .and(conOrganizador(req.getOrganizadorId()))
                 .and(conEdicion(req.getEdicionId()))
                 .and(conAnioNacimiento(req.getAnioNacimiento()))
                 .and(conNivel(req.getNivel()))
@@ -26,12 +25,6 @@ public class CategoriaSpecification {
     public static Specification<Categoria> conActiva(Boolean activa) {
         return (root, query, cb) ->
                 activa == null ? null : cb.equal(root.get("activa"), activa);
-    }
-
-    public static Specification<Categoria> conOrganizador(Long organizadorId) {
-        return (root, query, cb) ->
-                organizadorId == null ? null
-                        : cb.equal(root.get("organizadorId"), organizadorId);
     }
 
     public static Specification<Categoria> conEdicion(Long edicionId) {
