@@ -43,6 +43,13 @@ public class Usuario implements UserDetails {
     @Column(name = "organizador_id")
     private Long organizadorId;
 
+    /**
+     * Equipo al que está asignado el usuario. Solo se usa para el rol DELEGADO:
+     * acota sus permisos a un único equipo. null para ADMIN y ORGANIZADOR.
+     */
+    @Column(name = "equipo_id")
+    private Long equipoId;
+
     @Column(nullable = false)
     private Boolean activo = true;
 

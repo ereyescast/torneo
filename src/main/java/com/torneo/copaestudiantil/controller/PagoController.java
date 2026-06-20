@@ -8,6 +8,7 @@ import com.torneo.copaestudiantil.service.PagoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.torneo.copaestudiantil.common.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -103,11 +104,10 @@ public class PagoController {
     @PostMapping("/inscripcion")
     public ResponseEntity<ApiResponse<PagoEquipoResponse>> inicializarInscripcion(
             @RequestParam Long equipoId,
-            @RequestParam Long edicionId,
-            @RequestParam Long organizadorId) {
+            @RequestParam Long edicionId) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(
-                        pagoService.inicializarInscripcion(equipoId, edicionId, organizadorId),
+                        pagoService.inicializarInscripcion(equipoId, edicionId, SecurityUtils.getOrganizadorIdActual()),
                         CodigoNegocio.S_EQU_201_001));
     }
 }

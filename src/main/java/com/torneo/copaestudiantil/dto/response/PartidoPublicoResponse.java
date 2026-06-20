@@ -8,8 +8,7 @@ import java.time.LocalDateTime;
 
 /**
  * Partido para la VISTA PÚBLICA (padres).
- * Versión ligera: solo lo que el público necesita ver, con equipos como resumen.
- * No expone datos internos de gestión.
+ * Incluye el nombre del grupo y el nombre de la sede donde se juega.
  */
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PartidoPublicoResponse {
@@ -22,5 +21,7 @@ public class PartidoPublicoResponse {
     private EstadoPartido estado;
     private FasePartido fase;
     private Long grupoId;
+    private String grupoNombre;
+    private String sedeNombre;
     private String cancha;
 }

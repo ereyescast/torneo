@@ -4,6 +4,7 @@ import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
 import com.torneo.copaestudiantil.common.response.ApiResponse;
 import com.torneo.copaestudiantil.dto.request.LoginRequest;
 import com.torneo.copaestudiantil.dto.request.RegisterRequest;
+import com.torneo.copaestudiantil.dto.request.RegistroDelegadoRequest;
 import com.torneo.copaestudiantil.dto.response.AuthResponse;
 import com.torneo.copaestudiantil.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,16 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(authService.register(request),
+                        CodigoNegocio.S_AUT_201_001));
+    }
+
+    @Operation(summary = "Registrar delegado con código",
+            description = "El delegado se registra con el código que le dio el organizador.")
+    @PostMapping("/registro-delegado")
+    public ResponseEntity<ApiResponse<AuthResponse>> registroDelegado(
+            @Valid @RequestBody RegistroDelegadoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(authService.registrarDelegado(request),
                         CodigoNegocio.S_AUT_201_001));
     }
 }

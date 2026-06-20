@@ -120,6 +120,8 @@ public enum CodigoNegocio {
     S_TEC_200_001("S_TEC_200_001", "Técnico encontrado"),
     S_TEC_200_002("S_TEC_200_002", "Técnicos recuperados exitosamente"),
     S_TEC_200_003("S_TEC_200_003", "Técnico actualizado exitosamente"),
+    S_DEL_200_001("S_DEL_200_001", "Delegado procesado exitosamente"),
+    S_ORG_200_001("S_ORG_200_001", "Código de organizador procesado exitosamente"),
     S_TEC_201_001("S_TEC_201_001", "Técnico creado exitosamente"),
     S_TEC_204_001("S_TEC_204_001", "Técnico desactivado exitosamente"),
     E_TEC_404_001("E_TEC_404_001", "Técnico no encontrado"),
@@ -128,7 +130,9 @@ public enum CodigoNegocio {
     E_GEN_400_001("E_GEN_400_001", "Solicitud inválida"),
     E_GEN_404_001("E_GEN_404_001", "Recurso no encontrado"),
     E_GEN_409_001("E_GEN_409_001", "Ya existe un registro con esos datos"),
-    E_GEN_500_001("E_GEN_500_001", "Error interno del servidor");
+    E_GEN_500_001("E_GEN_500_001", "Error interno del servidor"),
+
+    S_ORG_200_002("S_ORG_200_002", "Torneos recuperados exitosamente");
 
     private final String codigo;
     private final String descripcion;

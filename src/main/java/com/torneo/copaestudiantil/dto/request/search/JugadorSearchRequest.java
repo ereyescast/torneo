@@ -1,6 +1,7 @@
 package com.torneo.copaestudiantil.dto.request.search;
 
 import com.torneo.copaestudiantil.entity.TipoDocumento;
+import com.torneo.copaestudiantil.entity.PosicionJugador;
 import lombok.*;
 
 /**
@@ -21,6 +22,7 @@ public class JugadorSearchRequest {
     private TipoDocumento tipoDocumento;
     private String numeroDocumento;       // exacto
     private String nacionalidad;
+    private PosicionJugador posicion;     // filtra por posición exacta
     private Integer anioNacimientoDesde;  // fechaNacimiento >= YYYY-01-01
     private Integer anioNacimientoHasta;  // fechaNacimiento <= YYYY-12-31
     private Boolean tieneFoto;            // profileImage IS NOT NULL

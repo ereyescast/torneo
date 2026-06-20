@@ -61,6 +61,22 @@ public class Jugador {
     @Column(name = "profile_image", length = 300)
     private String profileImage;
 
+    /**
+     * Consentimiento del padre/madre/tutor para PUBLICAR la foto del menor
+     * (Ley 29733). La foto solo se expone en la vista pública si esto es true.
+     * Lo marca el delegado/organizador al subir la foto.
+     */
+    @Column(name = "consentimiento_foto", nullable = false)
+    @Builder.Default
+    private Boolean consentimientoFoto = false;
+
+    /**
+     * Posición en cancha. Dato deportivo, no personal sensible → se expone en la vista pública.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PosicionJugador posicion;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;

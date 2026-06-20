@@ -134,6 +134,7 @@ public class TablaPosicionServiceImpl implements TablaPosicionService {
                 .edicionId(t.getEdicion().getId())
                 .categoriaId(t.getCategoria().getId())
                 .grupoId(t.getGrupo() != null ? t.getGrupo().getId() : null)
+                .grupoNombre(t.getGrupo() != null ? t.getGrupo().getNombre() : null)
                 .partidosJugados(t.getPartidosJugados())
                 .partidosGanados(t.getPartidosGanados())
                 .partidosEmpatados(t.getPartidosEmpatados())

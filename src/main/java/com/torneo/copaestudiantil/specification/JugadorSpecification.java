@@ -21,6 +21,7 @@ public class JugadorSpecification {
                 .and(conTipoDocumento(req.getTipoDocumento()))
                 .and(conNumeroDocumento(req.getNumeroDocumento()))
                 .and(conNacionalidad(req.getNacionalidad()))
+                .and(conPosicion(req.getPosicion()))
                 .and(conAnioNacimientoDesde(req.getAnioNacimientoDesde()))
                 .and(conAnioNacimientoHasta(req.getAnioNacimientoHasta()))
                 .and(conFoto(req.getTieneFoto()))
@@ -51,6 +52,13 @@ public class JugadorSpecification {
     public static Specification<Jugador> conTipoDocumento(TipoDocumento tipo) {
         return (root, query, cb) ->
                 tipo == null ? null : cb.equal(root.get("tipoDocumento"), tipo);
+    }
+
+    /** EXACTO — filtra por posición en cancha. */
+    public static Specification<Jugador> conPosicion(
+            com.torneo.copaestudiantil.entity.PosicionJugador posicion) {
+        return (root, query, cb) ->
+                posicion == null ? null : cb.equal(root.get("posicion"), posicion);
     }
 
     /** EXACTO — el documento es único, el usuario lo sabe completo. */

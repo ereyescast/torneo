@@ -13,18 +13,28 @@ import java.util.List;
  */
 public interface PublicService {
 
-    /** Información básica del organizador/torneo (nombre, logo) por su slug. */
     OrganizadorPublicoResponse obtenerOrganizador(String codigoPublico);
-
-    /** Ediciones activas del organizador (los torneos disponibles para ver). */
     List<EdicionResumenResponse> listarEdiciones(String codigoPublico);
-
-    /** Categorías de una edición. */
     List<CategoriaResumenResponse> listarCategorias(String codigoPublico, Long edicionId);
-
-    /** Tabla de posiciones de una edición + categoría. */
     List<TablaPosicionResponse> obtenerTabla(String codigoPublico, Long edicionId, Long categoriaId);
-
-    /** Partidos de una edición + categoría (fixture y resultados). */
     List<PartidoPublicoResponse> listarPartidos(String codigoPublico, Long edicionId, Long categoriaId);
+    List<TorneoDirectorioResponse> listarTorneos(String q);
+
+    /** Sedes activas del torneo (dónde se juega). */
+    List<SedePublicaResponse> listarSedes(String codigoPublico);
+
+    /**
+     * Ranking de goleadores. fase es opcional (null = todas las fases).
+     */
+    List<GoleadorResponse> rankingGoleadores(
+            String codigoPublico, Long edicionId, Long categoriaId, String fase);
+
+    /**
+     * Ranking de tarjetas (amarillas y rojas). fase es opcional.
+     */
+    List<TarjetaResponse> rankingTarjetas(
+            String codigoPublico, Long edicionId, Long categoriaId, String fase);
+
+    /** Plantel (técnico + jugadores activos) de un equipo. */
+    PlantelResponse listarPlantel(String codigoPublico, Long equipoId);
 }

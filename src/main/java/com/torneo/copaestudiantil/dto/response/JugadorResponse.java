@@ -3,6 +3,7 @@ package com.torneo.copaestudiantil.dto.response;
 import com.torneo.copaestudiantil.common.response.HasId;
 import com.torneo.copaestudiantil.common.response.HasSortValue;
 import com.torneo.copaestudiantil.entity.TipoDocumento;
+import com.torneo.copaestudiantil.entity.PosicionJugador;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -22,7 +23,9 @@ public class JugadorResponse implements HasId, HasSortValue {
     private String numeroDocumento;
     private LocalDate fechaNacimiento;
     private String nacionalidad;
+    private PosicionJugador posicion;
     private String profileImage;
+    private Boolean consentimientoFoto;
     private Boolean activo;
 
     /**

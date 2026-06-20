@@ -61,6 +61,35 @@ public final class SecurityUtils {
         return usuario != null && RolUsuario.ADMIN.equals(usuario.getRol());
     }
 
+    /** True si el usuario autenticado es DELEGADO (gestiona un solo equipo). */
+    public static boolean esDelegado() {
+        Usuario usuario = getUsuarioActual();
+        return usuario != null && RolUsuario.DELEGADO.equals(usuario.getRol());
+    }
+
+    /** equipoId del delegado autenticado (null si no es delegado o no lo tiene). */
+    public static Long getEquipoIdActual() {
+        Usuario usuario = getUsuarioActual();
+        return usuario != null ? usuario.getEquipoId() : null;
+    }
+
+    /**
+     * Si el usuario es DELEGADO, valida que la operación sea sobre SU equipo.
+     * Para ORGANIZADOR/ADMIN no impone restricción de equipo (ya pasan por
+     * validarPertenencia a nivel de organizador).
+     *
+     * Cierra el hueco: un delegado no puede inscribir/tocar el equipo de otro.
+     */
+    public static void validarEquipoDelegado(Long equipoIdDelRecurso) {
+        if (!esDelegado()) return; // organizador/admin no se restringen por equipo
+
+        Long miEquipo = getEquipoIdActual();
+        if (miEquipo == null || !miEquipo.equals(equipoIdDelRecurso)) {
+            throw new BadRequestException(
+                    "Como delegado solo puedes gestionar los jugadores de tu propio equipo.");
+        }
+    }
+
     /**
      * Valida que un recurso pertenezca al organizador del usuario autenticado.
      * Lanza excepción si el recurso es de otro organizador.

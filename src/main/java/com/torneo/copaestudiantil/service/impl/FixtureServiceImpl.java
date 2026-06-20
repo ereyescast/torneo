@@ -9,6 +9,7 @@ import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.*;
 import com.torneo.copaestudiantil.service.FixtureService;
+import com.torneo.copaestudiantil.common.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +49,7 @@ public class FixtureServiceImpl implements FixtureService {
         }
 
         Fixture fixture = Fixture.builder()
-                .organizadorId(request.getOrganizadorId())
+                .organizadorId(SecurityUtils.getOrganizadorIdActual())
                 .edicion(edicion)
                 .categoria(categoria)
                 .sede(sede)
@@ -173,7 +174,7 @@ public class FixtureServiceImpl implements FixtureService {
             for (int i = 0; i < equipos.size(); i++) {
                 for (int j = i + 1; j < equipos.size(); j++) {
                     todosLosPartidos.add(Partido.builder()
-                            .organizadorId(request.getOrganizadorId())
+                            .organizadorId(SecurityUtils.getOrganizadorIdActual())
                             .edicion(fixture.getEdicion())
                             .categoria(fixture.getCategoria() != null
                                     ? fixture.getCategoria() : grupo.getCategoria())

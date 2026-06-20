@@ -15,5 +15,5 @@ public interface JugadorService {
     JugadorResponse crear(JugadorRequest request);
     JugadorResponse actualizar(Long id, JugadorRequest request);
     void desactivar(Long id);
-    JugadorResponse subirImagen(Long id, MultipartFile file);
+    JugadorResponse subirImagen(Long id, MultipartFile file, boolean consentimiento);
 }

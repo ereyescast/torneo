@@ -6,6 +6,7 @@ import com.torneo.copaestudiantil.entity.*;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.*;
+import com.torneo.copaestudiantil.common.util.SecurityUtils;
 import com.torneo.copaestudiantil.service.InscripcionJugadorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,10 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
         EdicionTorneo edicion = edicionRepository.findById(request.getEdicionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Edición no encontrada"));
 
+        // ── Seguridad — un delegado solo inscribe en SU equipo ───────────────
+        SecurityUtils.validarPertenencia(equipo.getOrganizadorId());
+        SecurityUtils.validarEquipoDelegado(equipo.getId());
+
         // ── Art. 11 — Validar fecha límite de inscripción ─────────────────────
         validarFechaLimiteInscripcion(request.getEdicionId());
 
@@ -52,7 +57,7 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
         validarCupoMaximo(equipo);
 
         InscripcionJugador inscripcion = InscripcionJugador.builder()
-                .organizadorId(request.getOrganizadorId())
+                .organizadorId(SecurityUtils.getOrganizadorIdActual())
                 .jugador(jugador)
                 .equipo(equipo)
                 .edicion(edicion)
@@ -77,9 +82,30 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public MiEquipoDelegadoResponse miContextoDelegado() {
+        Long equipoId = SecurityUtils.getEquipoIdActual();
+        if (equipoId == null)
+            throw new BadRequestException("Este usuario no está asignado a ningún equipo.");
+        Equipo equipo = equipoRepository.findById(equipoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
+        SecurityUtils.validarPertenencia(equipo.getOrganizadorId());
+        return MiEquipoDelegadoResponse.builder()
+                .equipoId(equipo.getId())
+                .equipoNombre(equipo.getNombre())
+                .edicionId(equipo.getEdicion() != null ? equipo.getEdicion().getId() : null)
+                .edicionNombre(equipo.getEdicion() != null ? equipo.getEdicion().getNombre() : null)
+                .categoriaId(equipo.getCategoria() != null ? equipo.getCategoria().getId() : null)
+                .build();
+    }
+
+    @Override
     public void desinscribir(Long id) {
         InscripcionJugador inscripcion = inscripcionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inscripción no encontrada"));
+        // Seguridad: pertenencia de organizador + (si es delegado) su propio equipo
+        SecurityUtils.validarPertenencia(inscripcion.getOrganizadorId());
+        SecurityUtils.validarEquipoDelegado(inscripcion.getEquipo().getId());
         inscripcion.setActivo(false);
         inscripcionRepository.save(inscripcion);
     }

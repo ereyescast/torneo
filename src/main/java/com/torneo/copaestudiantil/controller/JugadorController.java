@@ -81,9 +81,10 @@ public class JugadorController {
     @PutMapping("/{id}/imagen")
     public ResponseEntity<ApiResponse<JugadorResponse>> subirImagen(
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "consentimiento", defaultValue = "false") boolean consentimiento) {
         return ResponseEntity.ok(
-                ApiResponse.ok(jugadorService.subirImagen(id, file),
+                ApiResponse.ok(jugadorService.subirImagen(id, file, consentimiento),
                         CodigoNegocio.S_JUG_200_003));
     }
 

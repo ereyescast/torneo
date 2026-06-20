@@ -70,6 +70,17 @@ public class TecnicoController {
                         CodigoNegocio.S_TEC_200_003));
     }
 
+    @Operation(summary = "Asignar técnico a un equipo",
+            description = "Vincula el técnico a un equipo dentro de una edición (cuerpo técnico).")
+    @PostMapping("/{id}/equipos/{equipoId}")
+    public ResponseEntity<ApiResponse<Void>> asignarAEquipo(
+            @PathVariable Long id,
+            @PathVariable Long equipoId,
+            @RequestParam Long edicionId) {
+        tecnicoService.asignarAEquipo(id, equipoId, edicionId);
+        return ResponseEntity.ok(ApiResponse.noContent(CodigoNegocio.S_TEC_200_003));
+    }
+
     @Operation(summary = "Eliminar técnico", description = "Soft delete")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> eliminar(@PathVariable Long id) {

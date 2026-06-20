@@ -11,6 +11,7 @@ import com.torneo.copaestudiantil.entity.Jugador;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.JugadorRepository;
+import com.torneo.copaestudiantil.repository.InscripcionJugadorRepository;
 import com.torneo.copaestudiantil.service.JugadorService;
 import com.torneo.copaestudiantil.specification.JugadorSpecification;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ import java.util.UUID;
 public class JugadorServiceImpl implements JugadorService {
 
     private final JugadorRepository jugadorRepository;
+    private final InscripcionJugadorRepository inscripcionRepository;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -79,6 +81,7 @@ public class JugadorServiceImpl implements JugadorService {
                 .fechaNacimiento(request.getFechaNacimiento())
                 .nacionalidad(request.getNacionalidad())
                 .genero(request.getGenero())
+                .posicion(request.getPosicion())
                 .activo(true)
                 .build();
         return toResponse(jugadorRepository.save(jugador));
@@ -106,6 +109,7 @@ public class JugadorServiceImpl implements JugadorService {
     public JugadorResponse actualizar(Long id, JugadorRequest request) {
         Jugador jugador = findById(id);
         SecurityUtils.validarPertenencia(jugador.getOrganizadorId());
+        validarJugadorDeMiEquipoSiDelegado(id);
         Long organizadorId = jugador.getOrganizadorId();
 
         if (!jugador.getNumeroDocumento().equals(request.getNumeroDocumento())
@@ -123,6 +127,7 @@ public class JugadorServiceImpl implements JugadorService {
         jugador.setFechaNacimiento(request.getFechaNacimiento());
         jugador.setNacionalidad(request.getNacionalidad());
         if (request.getGenero() != null) jugador.setGenero(request.getGenero());
+        if (request.getPosicion() != null) jugador.setPosicion(request.getPosicion());
         jugador.setActivo(request.getActivo() != null ? request.getActivo() : jugador.getActivo());
         return toResponse(jugadorRepository.save(jugador));
     }
@@ -131,14 +136,16 @@ public class JugadorServiceImpl implements JugadorService {
     public void desactivar(Long id) {
         Jugador jugador = findById(id);
         SecurityUtils.validarPertenencia(jugador.getOrganizadorId());
+        validarJugadorDeMiEquipoSiDelegado(id);
         jugador.setActivo(false);
         jugadorRepository.save(jugador);
     }
 
     @Override
-    public JugadorResponse subirImagen(Long id, MultipartFile file) {
+    public JugadorResponse subirImagen(Long id, MultipartFile file, boolean consentimiento) {
         Jugador jugador = findById(id);
         SecurityUtils.validarPertenencia(jugador.getOrganizadorId());
+        validarJugadorDeMiEquipoSiDelegado(id);
 
         if (!Boolean.TRUE.equals(jugador.getActivo()))
             throw new BadRequestException("No se puede subir imagen a un jugador inactivo");
@@ -159,9 +166,29 @@ public class JugadorServiceImpl implements JugadorService {
             Path path = Paths.get(dir + fileName);
             Files.write(path, file.getBytes());
             jugador.setProfileImage("/" + dir + fileName);
+            jugador.setConsentimientoFoto(consentimiento);
             return toResponse(jugadorRepository.save(jugador));
         } catch (IOException e) {
             throw new BadRequestException("Error al guardar la imagen");
+        }
+    }
+
+    /**
+     * Si el usuario es DELEGADO, valida que el jugador esté inscrito (activo) en SU equipo.
+     * Cierra el hueco de que un delegado edite/elimine jugadores de otro equipo.
+     * Para ORGANIZADOR/ADMIN no impone restricción.
+     */
+    private void validarJugadorDeMiEquipoSiDelegado(Long jugadorId) {
+        if (!SecurityUtils.esDelegado()) return;
+        Long miEquipo = SecurityUtils.getEquipoIdActual();
+        boolean enMiEquipo = miEquipo != null && inscripcionRepository.findByJugadorId(jugadorId)
+                .stream()
+                .anyMatch(i -> Boolean.TRUE.equals(i.getActivo())
+                        && i.getEquipo() != null
+                        && miEquipo.equals(i.getEquipo().getId()));
+        if (!enMiEquipo) {
+            throw new BadRequestException(
+                    "Como delegado solo puedes modificar jugadores inscritos en tu equipo.");
         }
     }
 
@@ -181,6 +208,7 @@ public class JugadorServiceImpl implements JugadorService {
                 .numeroDocumento(j.getNumeroDocumento())
                 .fechaNacimiento(j.getFechaNacimiento())
                 .nacionalidad(j.getNacionalidad())
+                .posicion(j.getPosicion())
                 .profileImage(j.getProfileImage())
                 .activo(j.getActivo())
                 .build();

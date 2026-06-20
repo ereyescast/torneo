@@ -45,10 +45,16 @@ public class SecurityConfig {
                         // Todo bajo /api/public/** es de solo lectura y abierto.
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
 
-                        // ── PANEL ADMIN (organizador, requiere token) ──
-                        // Todo bajo /api/admin/** exige autenticación.
-                        // El filtro de organizador se aplica en los services.
-                        .requestMatchers("/api/admin/**").authenticated()
+                        // ── PANEL ADMIN ──
+                        // El DELEGADO solo puede gestionar jugadores e inscripciones (de su equipo).
+                        .requestMatchers("/api/admin/jugadores/**", "/api/admin/inscripciones/**")
+                            .hasAnyRole("ADMIN", "ORGANIZADOR", "DELEGADO")
+                        // Solo el admin de plataforma genera códigos de organizador.
+                        .requestMatchers("/api/admin/codigos-organizador/**")
+                            .hasRole("ADMIN")
+                        // El resto del panel es exclusivo de organizador/admin.
+                        .requestMatchers("/api/admin/**")
+                            .hasAnyRole("ADMIN", "ORGANIZADOR")
 
                         // ── Cualquier otra ruta requiere autenticación ──
                         .anyRequest().authenticated()

@@ -22,6 +22,14 @@ public class Organizador {
     private String nombre;
 
     /**
+     * Nombre normalizado para búsqueda (sin tildes, minúsculas).
+     * Lo llena la capa de servicio (AuthServiceImpl) al crear/editar.
+     * Permite que "sabados" encuentre "Sábados" en el directorio.
+     */
+    @Column(name = "nombre_busqueda", length = 150)
+    private String nombreBusqueda;
+
+    /**
      * Slug único para las URLs públicas que se comparten por WhatsApp.
      * Ej: "copa-estudiantil-callao", "bundesliga-kids-peru".
      * Se genera automáticamente del nombre al registrarse.
@@ -46,6 +54,15 @@ public class Organizador {
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
+
+    /**
+     * Controla si el torneo aparece en el directorio público (la lista
+     * que exploran los padres). true = visible para todos; false = solo
+     * accesible si conoces el código (torneo privado).
+     */
+    @Column(name = "visible_en_directorio", nullable = false)
+    @Builder.Default
+    private Boolean visibleEnDirectorio = true;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;

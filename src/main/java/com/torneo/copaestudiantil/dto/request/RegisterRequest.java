@@ -26,4 +26,8 @@ public class RegisterRequest {
      */
     @NotBlank(message = "El nombre del organizador es obligatorio")
     private String nombreOrganizador;
+
+    /** Código de invitación que el admin de plataforma entregó al organizador. */
+    @NotBlank(message = "El código de invitación es obligatorio")
+    private String codigo;
 }

@@ -11,6 +11,12 @@ import com.torneo.copaestudiantil.entity.Tecnico;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.TecnicoRepository;
+import com.torneo.copaestudiantil.repository.TecnicoEquipoEdicionRepository;
+import com.torneo.copaestudiantil.repository.EquipoRepository;
+import com.torneo.copaestudiantil.repository.EdicionTorneoRepository;
+import com.torneo.copaestudiantil.entity.TecnicoEquipoEdicion;
+import com.torneo.copaestudiantil.entity.Equipo;
+import com.torneo.copaestudiantil.entity.EdicionTorneo;
 import com.torneo.copaestudiantil.service.TecnicoService;
 import com.torneo.copaestudiantil.specification.TecnicoSpecification;
 import jakarta.transaction.Transactional;
@@ -33,6 +39,9 @@ import java.util.List;
 public class TecnicoServiceImpl implements TecnicoService {
 
     private final TecnicoRepository tecnicoRepository;
+    private final TecnicoEquipoEdicionRepository asignacionRepository;
+    private final EquipoRepository equipoRepository;
+    private final EdicionTorneoRepository edicionRepository;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -140,6 +149,33 @@ public class TecnicoServiceImpl implements TecnicoService {
         } catch (IOException e) {
             throw new BadRequestException("Error al guardar la imagen");
         }
+    }
+
+    @Override
+    public void asignarAEquipo(Long tecnicoId, Long equipoId, Long edicionId) {
+        Tecnico tecnico = findById(tecnicoId);
+        SecurityUtils.validarPertenencia(tecnico.getOrganizadorId());
+
+        Equipo equipo = equipoRepository.findById(equipoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
+        SecurityUtils.validarPertenencia(equipo.getOrganizadorId());
+
+        EdicionTorneo edicion = edicionRepository.findById(edicionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Edición no encontrada"));
+        SecurityUtils.validarPertenencia(edicion.getOrganizadorId());
+
+        // Idempotente: si ya existe la asignación, no la duplica.
+        if (asignacionRepository.existsByTecnicoIdAndEquipoIdAndEdicionId(
+                tecnicoId, equipoId, edicionId)) {
+            return;
+        }
+
+        asignacionRepository.save(TecnicoEquipoEdicion.builder()
+                .tecnico(tecnico)
+                .equipo(equipo)
+                .edicion(edicion)
+                .activo(true)
+                .build());
     }
 
     private Tecnico findById(Long id) {

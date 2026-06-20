@@ -35,5 +35,8 @@ public class JugadorRequest {
     /** Género — necesario para la regla Art. 22 (niña juega 1 categoría arriba). */
     private Genero genero;
 
+    /** Posición en cancha. Opcional. */
+    private com.torneo.copaestudiantil.entity.PosicionJugador posicion;
+
     private Boolean activo;
 }

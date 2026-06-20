@@ -4,6 +4,7 @@ import com.torneo.copaestudiantil.common.codigo.CodigoNegocio;
 import com.torneo.copaestudiantil.common.response.ApiResponse;
 import com.torneo.copaestudiantil.dto.request.InscripcionJugadorRequest;
 import com.torneo.copaestudiantil.dto.response.InscripcionJugadorResponse;
+import com.torneo.copaestudiantil.dto.response.MiEquipoDelegadoResponse;
 import com.torneo.copaestudiantil.service.InscripcionJugadorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,6 +23,14 @@ import java.util.List;
 public class InscripcionJugadorController {
 
     private final InscripcionJugadorService inscripcionService;
+
+    @Operation(summary = "Contexto del delegado autenticado (su equipo y edición)")
+    @GetMapping("/mi-equipo")
+    public ResponseEntity<ApiResponse<MiEquipoDelegadoResponse>> miEquipo() {
+        return ResponseEntity.ok(
+                ApiResponse.ok(inscripcionService.miContextoDelegado(),
+                        CodigoNegocio.S_INS_201_001));
+    }
 
     @Operation(summary = "Listar jugadores inscritos de un equipo")
     @GetMapping("/equipo/{equipoId}")

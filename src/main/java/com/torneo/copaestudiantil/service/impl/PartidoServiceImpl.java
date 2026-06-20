@@ -9,6 +9,7 @@ import com.torneo.copaestudiantil.repository.*;
 import com.torneo.copaestudiantil.service.PagoService;
 import com.torneo.copaestudiantil.service.PartidoService;
 import com.torneo.copaestudiantil.service.TablaPosicionService;
+import com.torneo.copaestudiantil.common.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +58,7 @@ public class PartidoServiceImpl implements PartidoService {
         }
 
         Partido partido = Partido.builder()
-                .organizadorId(request.getOrganizadorId())
+                .organizadorId(SecurityUtils.getOrganizadorIdActual())
                 .edicion(edicion).categoria(categoria).sede(sede)
                 .equipoLocal(local).equipoVisitante(visitante)
                 .fechaHora(request.getFechaHora())

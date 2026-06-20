@@ -17,6 +17,30 @@ public interface PartidoRepository extends JpaRepository<Partido, Long>,
 
     List<Partido> findByEdicionIdAndCategoriaId(Long edicionId, Long categoriaId);
 
+    /**
+     * Igual que findByEdicionIdAndCategoriaId, pero trae en UNA sola consulta
+     * el partido junto con equipo local, equipo visitante, grupo y sede
+     * (JOIN FETCH). Evita el problema N+1 al listar el fixture público:
+     * sin esto, Hibernate dispara una consulta por cada relación de cada
+     * partido (1 + 4×N consultas). Con esto, todo en una.
+     *
+     * Se usan LEFT JOIN FETCH porque grupo y sede pueden ser null
+     * (un partido eliminatorio puede no tener grupo).
+     */
+    @Query("""
+        SELECT p FROM Partido p
+        LEFT JOIN FETCH p.equipoLocal
+        LEFT JOIN FETCH p.equipoVisitante
+        LEFT JOIN FETCH p.grupo
+        LEFT JOIN FETCH p.sede
+        WHERE p.edicion.id = :edicionId
+          AND p.categoria.id = :categoriaId
+        ORDER BY p.fechaHora ASC
+        """)
+    List<Partido> findFixtureConDetalles(
+            @Param("edicionId") Long edicionId,
+            @Param("categoriaId") Long categoriaId);
+
     List<Partido> findByEdicionIdAndCategoriaIdAndEstado(
             Long edicionId, Long categoriaId, EstadoPartido estado);
 

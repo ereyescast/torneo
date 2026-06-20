@@ -14,4 +14,7 @@ public interface TecnicoService {
     TecnicoResponse actualizar(Long id, TecnicoRequest request);
     void eliminar(Long id);
     TecnicoResponse subirImagen(Long id, MultipartFile file);
+
+    /** Asigna un técnico a un equipo dentro de una edición (cuerpo técnico). */
+    void asignarAEquipo(Long tecnicoId, Long equipoId, Long edicionId);
 }
