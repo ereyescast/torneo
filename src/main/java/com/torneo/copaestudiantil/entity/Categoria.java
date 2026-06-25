@@ -55,6 +55,10 @@ public class Categoria {
     @Column(name = "max_jugadores_por_equipo")
     private Integer maxJugadoresPorEquipo;
 
+    /** Máximo de equipos que puede tener cada grupo de esta categoría (null = sin límite). */
+    @Column(name = "max_equipos_por_grupo")
+    private Integer maxEquiposPorGrupo;
+
     // 🔄 Activa o no
     @Column(nullable = false)
     private Boolean activa = true;

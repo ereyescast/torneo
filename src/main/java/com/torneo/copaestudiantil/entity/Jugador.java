@@ -9,6 +9,14 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "jugadores",
+        indexes = {
+                // Búsquedas por prefijo (apellido%, nombre%) siempre acotadas por organizador.
+                // Índice compuesto: primero organizador, luego el campo de texto.
+                @Index(name = "idx_jugador_org_apellido_pat", columnList = "organizador_id, apellido_paterno"),
+                @Index(name = "idx_jugador_org_apellido_mat", columnList = "organizador_id, apellido_materno"),
+                @Index(name = "idx_jugador_org_nombres",      columnList = "organizador_id, nombres"),
+                @Index(name = "idx_jugador_org_posicion",     columnList = "organizador_id, posicion")
+        },
         uniqueConstraints = {
                 // Documento único POR ORGANIZADOR (no global).
                 // Así Juanje puede registrar a un jugador aunque Miguel ya lo tenga.

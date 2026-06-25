@@ -23,6 +23,9 @@ public interface GrupoService {
     /** Crea un grupo (ej: "Grupo A") en una edición + categoría. */
     GrupoResponse crear(Long edicionId, Long categoriaId, String nombre);
 
+    /** Renombra un grupo existente. */
+    GrupoResponse actualizarNombre(Long id, String nombre);
+
     /**
      * Agrega un equipo al grupo e inicializa su fila en la tabla de posiciones.
      */

@@ -16,6 +16,7 @@ public class CategoriaResponse implements HasId, HasSortValue {
     private NivelCompetencia nivel;
     private ModalidadJuego modalidad;
     private Integer maxJugadoresPorEquipo;
+    private Integer maxEquiposPorGrupo;
     private Boolean activa;
 
     @Override

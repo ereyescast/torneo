@@ -20,6 +20,10 @@ public class EquipoResponse implements HasId, HasSortValue {
     private String logoUrl;
     private Boolean activo;
 
+    /** Grupo al que está asignado el equipo (null si no tiene grupo). */
+    private Long grupoId;
+    private String grupoNombre;
+
     @Override
     public Object getSortValue(String field) {
         return switch (field) {

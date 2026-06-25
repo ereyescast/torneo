@@ -10,4 +10,7 @@ public class GrupoResponse {
     private CategoriaResponse categoria;
     private String nombre;
     private Boolean activo;
+
+    /** Cantidad de equipos activos en el grupo (para mostrar "X/Y"). */
+    private Long cantidadEquipos;
 }

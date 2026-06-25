@@ -13,4 +13,7 @@ public interface ImagenService {
      * en el servidor. Toda esa lógica vive aquí, no en el controller.
      */
     Resource obtenerImagenTecnico(Long tecnicoId);
+
+    /** Devuelve la imagen del jugador como Resource lista para servir. */
+    Resource obtenerImagenJugador(Long jugadorId);
 }

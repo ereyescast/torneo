@@ -44,6 +44,8 @@ public class SecurityConfig {
                         // ── VISTA PÚBLICA (padres/público, sin login) ──
                         // Todo bajo /api/public/** es de solo lectura y abierto.
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
+                        // Las fotos (jugadores/técnicos) se muestran en la vista pública.
+                        .requestMatchers(HttpMethod.GET, "/api/imagenes/**").permitAll()
 
                         // ── PANEL ADMIN ──
                         // El DELEGADO solo puede gestionar jugadores e inscripciones (de su equipo).

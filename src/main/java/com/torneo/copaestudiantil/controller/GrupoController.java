@@ -53,6 +53,15 @@ public class GrupoController {
                 grupoService.crear(edicionId, categoriaId, nombre), CodigoNegocio.S_GRU_201_001));
     }
 
+    @Operation(summary = "Renombrar grupo")
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<GrupoResponse>> actualizar(
+            @PathVariable Long id,
+            @RequestParam String nombre) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                grupoService.actualizarNombre(id, nombre), CodigoNegocio.S_GRU_201_001));
+    }
+
     @Operation(summary = "Agregar equipo al grupo",
             description = "También inicializa la fila del equipo en la tabla de posiciones")
     @PostMapping("/{grupoId}/equipos/{equipoId}")

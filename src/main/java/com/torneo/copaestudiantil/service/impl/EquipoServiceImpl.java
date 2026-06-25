@@ -29,6 +29,7 @@ public class EquipoServiceImpl implements EquipoService {
     private final EdicionTorneoRepository edicionRepository;
     private final CategoriaRepository categoriaRepository;
     private final SedeRepository sedeRepository;
+    private final GrupoEquipoRepository grupoEquipoRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -130,9 +131,15 @@ public class EquipoServiceImpl implements EquipoService {
     }
 
     private EquipoResponse toResponse(Equipo e) {
+        // Grupo activo del equipo (puede no tener)
+        var asignacion = grupoEquipoRepository.findFirstByEquipoIdAndActivoTrue(e.getId()).orElse(null);
+        Long grupoId = asignacion != null ? asignacion.getGrupo().getId() : null;
+        String grupoNombre = asignacion != null ? asignacion.getGrupo().getNombre() : null;
+
         return EquipoResponse.builder()
                 .id(e.getId()).organizadorId(e.getOrganizadorId())
                 .nombre(e.getNombre()).logoUrl(e.getLogoUrl()).activo(e.getActivo())
+                .grupoId(grupoId).grupoNombre(grupoNombre)
                 .edicion(EdicionTorneoResponse.builder()
                         .id(e.getEdicion().getId()).organizadorId(e.getEdicion().getOrganizadorId())
                         .nombre(e.getEdicion().getNombre())

@@ -1,9 +1,11 @@
 package com.torneo.copaestudiantil.service.impl;
 
 import com.torneo.copaestudiantil.entity.Tecnico;
+import com.torneo.copaestudiantil.entity.Jugador;
 import com.torneo.copaestudiantil.exceptions.BadRequestException;
 import com.torneo.copaestudiantil.exceptions.ResourceNotFoundException;
 import com.torneo.copaestudiantil.repository.TecnicoRepository;
+import com.torneo.copaestudiantil.repository.JugadorRepository;
 import com.torneo.copaestudiantil.service.ImagenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,7 @@ import java.util.UUID;
 public class ImagenServiceImpl implements ImagenService {
 
     private final TecnicoRepository tecnicoRepository;
+    private final JugadorRepository jugadorRepository;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -68,8 +71,35 @@ public class ImagenServiceImpl implements ImagenService {
             throw new ResourceNotFoundException("El técnico no tiene imagen");
 
         try {
-            Path path = Paths.get(uploadDir)
-                    .resolve(tecnico.getProfileImage()).normalize();
+            String rel = tecnico.getProfileImage().replaceFirst("^/+", "");
+            Path path = Paths.get(rel).normalize().toAbsolutePath();
+            Resource resource = new UrlResource(path.toUri());
+
+            if (!resource.exists())
+                throw new ResourceNotFoundException("Imagen no encontrada en el servidor");
+
+            return resource;
+
+        } catch (MalformedURLException e) {
+            throw new ResourceNotFoundException("Error al cargar la imagen");
+        }
+    }
+
+    @Override
+    public Resource obtenerImagenJugador(Long jugadorId) {
+
+        Jugador jugador = jugadorRepository.findById(jugadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Jugador no encontrado"));
+
+        if (jugador.getProfileImage() == null)
+            throw new ResourceNotFoundException("El jugador no tiene imagen");
+
+        try {
+            // profileImage se guarda como "/uploads/jugadores/archivo.jpg".
+            // El "/" inicial haría que resolve() lo trate como ruta absoluta,
+            // así que se quita para resolverlo relativo al directorio del proyecto.
+            String rel = jugador.getProfileImage().replaceFirst("^/+", "");
+            Path path = Paths.get(rel).normalize().toAbsolutePath();
             Resource resource = new UrlResource(path.toUri());
 
             if (!resource.exists())

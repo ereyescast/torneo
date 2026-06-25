@@ -10,4 +10,9 @@ public class MiEquipoDelegadoResponse {
     private Long edicionId;
     private String edicionNombre;
     private Long categoriaId;
+    // Datos de la categoría del equipo, para que el delegado vea su contexto
+    // y se valide la edad de los jugadores que inscribe.
+    private Integer categoriaAnioNacimiento;
+    private String categoriaNivel;
+    private String categoriaModalidad;
 }

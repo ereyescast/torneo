@@ -36,4 +36,18 @@ public class ImagenController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(imagen);
     }
+
+    @Operation(
+            summary = "Obtener foto de jugador",
+            description = "Retorna la imagen del jugador en formato binario (JPG o PNG)"
+    )
+    @GetMapping("/jugadores/{id}")
+    public ResponseEntity<Resource> obtenerImagenJugador(
+            @Parameter(description = "ID del jugador") @PathVariable Long id) {
+
+        Resource imagen = imagenService.obtenerImagenJugador(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(imagen);
+    }
 }

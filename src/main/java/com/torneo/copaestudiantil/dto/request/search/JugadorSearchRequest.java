@@ -18,6 +18,7 @@ public class JugadorSearchRequest {
     // Filtros
     private Boolean activo;
     private String nombres;               // LIKE %nombres%
+    private String busqueda;              // busca en nombres O apellidos (OR)
     private String apellidoPaterno;       // LIKE %apellido%
     private TipoDocumento tipoDocumento;
     private String numeroDocumento;       // exacto
@@ -28,6 +29,7 @@ public class JugadorSearchRequest {
     private Boolean tieneFoto;            // profileImage IS NOT NULL
     private Long edicionId;               // jugadores inscritos en esta edición
     private Long equipoId;                // jugadores inscritos en este equipo
+    private Long categoriaId;             // jugadores inscritos en equipos de esta categoría
 
     // Paginación
     private CursorRequest pagination = new CursorRequest();

@@ -96,6 +96,11 @@ public class InscripcionJugadorServiceImpl implements InscripcionJugadorService 
                 .edicionId(equipo.getEdicion() != null ? equipo.getEdicion().getId() : null)
                 .edicionNombre(equipo.getEdicion() != null ? equipo.getEdicion().getNombre() : null)
                 .categoriaId(equipo.getCategoria() != null ? equipo.getCategoria().getId() : null)
+                .categoriaAnioNacimiento(equipo.getCategoria() != null ? equipo.getCategoria().getAnioNacimiento() : null)
+                .categoriaNivel(equipo.getCategoria() != null && equipo.getCategoria().getNivel() != null
+                        ? equipo.getCategoria().getNivel().name() : null)
+                .categoriaModalidad(equipo.getCategoria() != null && equipo.getCategoria().getModalidad() != null
+                        ? equipo.getCategoria().getModalidad().name() : null)
                 .build();
     }
 

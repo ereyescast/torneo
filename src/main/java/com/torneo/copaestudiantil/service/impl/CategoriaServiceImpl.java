@@ -64,6 +64,7 @@ public class CategoriaServiceImpl implements CategoriaService {
                 .nivel(request.getNivel())
                 .modalidad(request.getModalidad())
                 .maxJugadoresPorEquipo(request.getMaxJugadoresPorEquipo())
+                .maxEquiposPorGrupo(request.getMaxEquiposPorGrupo())
                 .activa(request.getActiva() != null ? request.getActiva() : true)
                 .build();
         return toResponse(categoriaRepository.save(categoria));
@@ -90,6 +91,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setNivel(request.getNivel());
         categoria.setModalidad(request.getModalidad());
         categoria.setMaxJugadoresPorEquipo(request.getMaxJugadoresPorEquipo());
+        categoria.setMaxEquiposPorGrupo(request.getMaxEquiposPorGrupo());
         categoria.setActiva(request.getActiva() != null ? request.getActiva() : categoria.getActiva());
         return toResponse(categoriaRepository.save(categoria));
     }
@@ -129,6 +131,7 @@ public class CategoriaServiceImpl implements CategoriaService {
                 .edicion(edicionResponse).anioNacimiento(c.getAnioNacimiento())
                 .nivel(c.getNivel()).modalidad(c.getModalidad())
                 .maxJugadoresPorEquipo(c.getMaxJugadoresPorEquipo())
+                .maxEquiposPorGrupo(c.getMaxEquiposPorGrupo())
                 .activa(c.getActiva()).build();
     }
 }

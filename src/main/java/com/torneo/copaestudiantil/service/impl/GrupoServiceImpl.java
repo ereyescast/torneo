@@ -25,6 +25,7 @@ public class GrupoServiceImpl implements GrupoService {
     private final CategoriaRepository categoriaRepository;
     private final EquipoRepository equipoRepository;
     private final TablaPosicionService tablaPosicionService;
+    private final TablaPosicionRepository tablaPosicionRepository;
 
     // ── Operaciones ────────────────────────────────────────────────────────────
 
@@ -71,6 +72,13 @@ public class GrupoServiceImpl implements GrupoService {
     }
 
     @Override
+    public GrupoResponse actualizarNombre(Long id, String nombre) {
+        Grupo grupo = obtenerGrupoValidado(id);
+        grupo.setNombre(nombre);
+        return toGrupoResponse(grupoRepository.save(grupo));
+    }
+
+    @Override
     public GrupoEquipoResponse agregarEquipo(Long grupoId, Long equipoId) {
         Grupo grupo = obtenerGrupoValidado(grupoId);
 
@@ -78,14 +86,49 @@ public class GrupoServiceImpl implements GrupoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
         SecurityUtils.validarPertenencia(equipo.getOrganizadorId());
 
-        if (grupoEquipoRepository.existsByGrupoIdAndEquipoId(grupoId, equipoId))
+        // Asignación activa actual del equipo (puede estar en otro grupo)
+        GrupoEquipo actual = grupoEquipoRepository
+                .findFirstByEquipoIdAndActivoTrue(equipoId).orElse(null);
+        if (actual != null && actual.getGrupo().getId().equals(grupoId))
             throw new BadRequestException("El equipo ya pertenece a este grupo");
 
-        GrupoEquipo guardado = grupoEquipoRepository.save(
-                GrupoEquipo.builder().grupo(grupo).equipo(equipo).activo(true).build());
+        // Límite del grupo destino (configurable en la categoría; null = sin límite)
+        Integer maxEquipos = grupo.getCategoria() != null
+                ? grupo.getCategoria().getMaxEquiposPorGrupo() : null;
+        if (maxEquipos != null) {
+            long actuales = grupoEquipoRepository.countByGrupoIdAndActivoTrue(grupoId);
+            if (actuales >= maxEquipos)
+                throw new BadRequestException(
+                        "El grupo ya alcanzó el máximo de " + maxEquipos + " equipos permitidos para esta categoría.");
+        }
 
-        // Inicializa la fila del equipo en la tabla de posiciones
-        tablaPosicionService.inicializarEquipo(equipo, grupo);
+        // Mover: desactivar la asignación previa en otro grupo y limpiar su fila de tabla
+        if (actual != null) {
+            actual.setActivo(false);
+            grupoEquipoRepository.save(actual);
+            tablaPosicionRepository
+                    .findByEquipoIdAndEdicionIdAndCategoriaIdAndGrupoId(
+                            equipoId, equipo.getEdicion().getId(),
+                            equipo.getCategoria().getId(), actual.getGrupo().getId())
+                    .ifPresent(tablaPosicionRepository::delete);
+        }
+
+        // Reactivar la fila si el equipo ya estuvo en este grupo, o crear una nueva
+        GrupoEquipo guardado = grupoEquipoRepository
+                .findFirstByGrupoIdAndEquipoId(grupoId, equipoId)
+                .map(ge -> { ge.setActivo(true); return grupoEquipoRepository.save(ge); })
+                .orElseGet(() -> grupoEquipoRepository.save(
+                        GrupoEquipo.builder().grupo(grupo).equipo(equipo).activo(true).build()));
+
+        // Inicializa la fila de tabla solo si no existe para este grupo
+        boolean yaTieneTabla = tablaPosicionRepository
+                .findByEquipoIdAndEdicionIdAndCategoriaIdAndGrupoId(
+                        equipoId, equipo.getEdicion().getId(),
+                        equipo.getCategoria().getId(), grupoId)
+                .isPresent();
+        if (!yaTieneTabla) {
+            tablaPosicionService.inicializarEquipo(equipo, grupo);
+        }
 
         return toGrupoEquipoResponse(guardado);
     }
@@ -131,7 +174,9 @@ public class GrupoServiceImpl implements GrupoService {
                         .id(c.getId()).organizadorId(c.getOrganizadorId())
                         .anioNacimiento(c.getAnioNacimiento())
                         .modalidad(c.getModalidad()).nivel(c.getNivel())
+                        .maxEquiposPorGrupo(c.getMaxEquiposPorGrupo())
                         .activa(c.getActiva()).build())
+                .cantidadEquipos(grupoEquipoRepository.countByGrupoIdAndActivoTrue(g.getId()))
                 .build();
     }
 

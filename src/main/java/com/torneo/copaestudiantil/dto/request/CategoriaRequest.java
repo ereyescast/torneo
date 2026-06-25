@@ -19,5 +19,6 @@ public class CategoriaRequest {
     private NivelCompetencia nivel;
     private ModalidadJuego modalidad;
     private Integer maxJugadoresPorEquipo;
+    private Integer maxEquiposPorGrupo;
     private Boolean activa;
 }
